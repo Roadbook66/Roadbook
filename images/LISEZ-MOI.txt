@@ -1,0 +1,345 @@
+PHOTOS DE ROADBOOK
+==================
+
+Dépose tes photos ici avec exactement ces noms (format .jpg).
+Tant qu’une photo manque, l’app affiche un paysage dessiné à la place.
+Conseil : photos en paysage, au moins 1600 px de large, moins de 500 Ko.
+
+images/accueil.jpg            → la grande image de l’accueil (format portrait conseillé)
+images/etapes/liaison.jpg     → journées de liaison (route, autoroute, aire)
+images/etapes/maison.jpg      → dernier jour, retour à la maison
+
+ÉTAPES (images/etapes/…)
+
+Normandie
+  fecamp.jpg               Fécamp
+  etretat.jpg              Étretat
+  honfleur.jpg             Honfleur
+  beuvron.jpg              Beuvron-en-Auge
+  arromanches.jpg          Arromanches
+  omaha.jpg                Omaha Beach
+  barfleur.jpg             Barfleur
+  lahague.jpg              Cap de la Hague
+  granville.jpg            Granville
+  montsaintmichel.jpg      Mont-Saint-Michel
+
+Bretagne
+  saintmalo.jpg            Saint-Malo
+  capfrehel.jpg            Cap Fréhel
+  paimpol.jpg              Paimpol
+  ploumanach.jpg           Côte de Granit Rose
+  roscoff.jpg              Roscoff
+  crozon.jpg               Presqu’île de Crozon
+  douarnenez.jpg           Douarnenez
+  pointeduraz.jpg          Pointe du Raz
+  concarneau.jpg           Concarneau
+  carnac.jpg               Carnac
+  quiberon.jpg             Quiberon
+  golfe.jpg                Golfe du Morbihan
+
+Alsace et Vosges
+  obernai.jpg              Obernai
+  ribeauville.jpg          Ribeauvillé
+  riquewihr.jpg            Riquewihr
+  kaysersberg.jpg          Kaysersberg
+  colmar.jpg               Colmar
+  eguisheim.jpg            Eguisheim
+  munster.jpg              Munster
+  markstein.jpg            Route des Crêtes
+  gerardmer.jpg            Gérardmer
+
+Provence et Verdon
+  avignon.jpg              Avignon
+  islesorgue.jpg           L’Isle-sur-la-Sorgue
+  gordes.jpg               Gordes
+  roussillon.jpg           Roussillon
+  forcalquier.jpg          Forcalquier
+  valensole.jpg            Valensole
+  moustiers.jpg            Moustiers-Sainte-Marie
+  lapalud.jpg              Gorges du Verdon
+  castellane.jpg           Castellane
+  saintecroix.jpg          Lac de Sainte-Croix
+
+Pays basque et Pyrénées
+  biarritz.jpg             Biarritz
+  saintjeandeluz.jpg       Saint-Jean-de-Luz
+  espelette.jpg            Espelette
+  sjpp.jpg                 Saint-Jean-Pied-de-Port
+  iraty.jpg                Forêt d’Iraty
+  aspe.jpg                 Vallée d’Aspe
+  ossau.jpg                Vallée d’Ossau
+  cauterets.jpg            Cauterets
+  gavarnie.jpg             Gavarnie
+  saintlary.jpg            Saint-Lary-Soulan
+  luchon.jpg               Bagnères-de-Luchon
+
+Espagne verte
+  donostia.jpg             Saint-Sébastien
+  getaria.jpg              Getaria
+  bilbao.jpg               Bilbao
+  castro.jpg               Castro Urdiales
+  santillana.jpg           Santillana del Mar
+  comillas.jpg             Comillas
+  potes.jpg                Potes (Picos de Europa)
+  llanes.jpg               Llanes
+  ribadesella.jpg          Ribadesella
+  cangas.jpg               Cangas de Onís
+  cudillero.jpg            Cudillero
+
+Lacs italiens
+  annecy.jpg               Annecy
+  chamonix.jpg             Chamonix
+  aoste.jpg                Aoste
+  orta.jpg                 Lac d’Orta
+  stresa.jpg               Stresa (lac Majeur)
+  varenna.jpg              Varenna (lac de Côme)
+  bergame.jpg              Bergame
+  sirmione.jpg             Sirmione (lac de Garde)
+  malcesine.jpg            Malcesine
+  riva.jpg                 Riva del Garda
+
+Portugal
+  porto.jpg                Porto
+  douro.jpg                Vallée du Douro
+  coimbra.jpg              Coimbra
+  nazare.jpg               Nazaré
+  obidos.jpg               Óbidos
+  sintra.jpg               Sintra
+  comporta.jpg             Comporta
+  milfontes.jpg            Vila Nova de Milfontes
+  sagres.jpg               Sagres
+  lagos.jpg                Lagos
+
+Andalousie
+  cordoue.jpg              Cordoue
+  seville.jpg              Séville
+  cadix.jpg                Cadix
+  vejer.jpg                Vejer de la Frontera
+  tarifa.jpg               Tarifa
+  ronda.jpg                Ronda
+  grenade.jpg              Grenade
+  alpujarras.jpg           Les Alpujarras
+  cabodegata.jpg           Cabo de Gata
+
+Toscane
+  pise.jpg                 Pise
+  lucques.jpg              Lucques
+  florence.jpg             Florence
+  chianti.jpg              Le Chianti
+  sangimignano.jpg         San Gimignano
+  volterra.jpg             Volterra
+  sienne.jpg               Sienne
+  montepulciano.jpg        Montepulciano
+  valdorcia.jpg            Val d’Orcia
+
+Dolomites
+  bolzano.jpg              Bolzano
+  carezza.jpg              Lac de Carezza
+  canazei.jpg              Canazei
+  ortisei.jpg              Ortisei
+  funes.jpg                Val di Funes
+  braies.jpg               Lac de Braies
+  trecime.jpg              Tre Cime di Lavaredo
+  cortina.jpg              Cortina d’Ampezzo
+
+Slovénie et Croatie
+  bled.jpg                 Lac de Bled
+  bohinj.jpg               Lac de Bohinj
+  ljubljana.jpg            Ljubljana
+  postojna.jpg             Postojna
+  motovun.jpg              Motovun
+  rovinj.jpg               Rovinj
+  plitvice.jpg             Lacs de Plitvice
+  zadar.jpg                Zadar
+  krka.jpg                 Parc de Krka
+  split.jpg                Split
+
+Forêt-Noire
+  badenbaden.jpg           Baden-Baden
+  mummelsee.jpg            Route des crêtes de la Forêt-Noire
+  gengenbach.jpg           Gengenbach
+  triberg.jpg              Triberg
+  fribourgb.jpg            Fribourg-en-Brisgau
+  titisee.jpg              Titisee
+  meersburg.jpg            Meersburg
+  lindau.jpg               Lindau
+
+Bavière et Autriche
+  fussen.jpg               Füssen
+  garmisch.jpg             Garmisch-Partenkirchen
+  innsbruck.jpg            Innsbruck
+  zellamsee.jpg            Zell am See
+  grossglockner.jpg        Route du Grossglockner
+  berchtesgaden.jpg        Berchtesgaden
+  salzbourg.jpg            Salzbourg
+  hallstatt.jpg            Hallstatt
+
+Norvège
+  bergen.jpg               Bergen
+  flam.jpg                 Flåm
+  geiranger.jpg            Geiranger
+  trollstigen.jpg          Route des Trolls
+  atlanterhavsveien.jpg    Route de l’Atlantique
+  alesund.jpg              Ålesund
+
+Suède
+  goteborg.jpg             Göteborg
+  bohuslan.jpg             Côte du Bohuslän
+  karlstad.jpg             Lac Vänern
+  siljan.jpg               Lac Siljan (Dalarna)
+  falun.jpg                Falun
+  stockholm.jpg            Stockholm
+  vattern.jpg              Lac Vättern
+
+Finlande
+  helsinki.jpg             Helsinki
+  porvoo.jpg               Porvoo
+  savonlinna.jpg           Savonlinna
+  punkaharju.jpg           Punkaharju
+  koli.jpg                 Parc de Koli
+  kuopio.jpg               Kuopio
+  tampere.jpg              Tampere
+
+Pays baltes
+  vilnius.jpg              Vilnius
+  trakai.jpg               Trakai
+  palanga.jpg              Palanga et la côte baltique
+  riga.jpg                 Riga
+  gauja.jpg                Parc de la Gauja
+  parnu.jpg                Pärnu
+  tallinn.jpg              Tallinn
+
+Pologne
+  cracovie.jpg             Cracovie
+  zakopane.jpg             Zakopane (Tatras)
+  pieniny.jpg              Les Pieniny
+  sandomierz.jpg           Sandomierz
+  kazimierz.jpg            Kazimierz Dolny
+  varsovie.jpg             Varsovie
+  mazurie.jpg              Lacs de Mazurie
+
+Tchéquie
+  prague.jpg               Prague
+  suisseboheme.jpg         Suisse de Bohême
+  adrspach.jpg             Rochers d’Adršpach
+  kutnahora.jpg            Kutná Hora
+  moravie.jpg              Vignobles de Moravie
+  telc.jpg                 Telč
+  krumlov.jpg              Český Krumlov
+
+Roumanie
+  cluj.jpg                 Cluj-Napoca
+  sighisoara.jpg           Sighișoara
+  biertan.jpg              Églises fortifiées
+  brasov.jpg               Brașov
+  curteadearges.jpg        Curtea de Argeș
+  transfagarasan.jpg       Route du Transfăgărășan
+  sibiu.jpg                Sibiu
+
+Monténégro et Albanie
+  dubrovnik.jpg            Dubrovnik
+  kotor.jpg                Baie de Kotor
+  budva.jpg                Budva
+  skadar.jpg               Lac de Skadar
+  berat.jpg                Berat
+  himare.jpg               Riviera albanaise
+  butrint.jpg              Ksamil et Butrint
+
+Grèce
+  meteores.jpg             Météores
+  delphes.jpg              Delphes
+  nafpaktos.jpg            Nafpaktos
+  olympie.jpg              Olympie
+  magne.jpg                Le Magne
+  monemvasia.jpg           Monemvasia
+  nauplie.jpg              Nauplie
+
+Pouilles
+  matera.jpg               Matera
+  alberobello.jpg          Alberobello
+  polignano.jpg            Polignano a Mare
+  ostuni.jpg               Ostuni
+  lecce.jpg                Lecce
+  otrante.jpg              Otrante
+  gallipoli.jpg            Gallipoli
+
+Suisse
+  lucerne.jpg              Lucerne
+  interlaken.jpg           Interlaken et Lauterbrunnen
+  grimsel.jpg              Col du Grimsel
+  zermatt.jpg              Zermatt (depuis Täsch)
+  montreux.jpg             Montreux et Lavaux
+  gruyeres.jpg             Gruyères
+
+Pays-Bas et Flandre
+  bruges.jpg               Bruges
+  gand.jpg                 Gand
+  zelande.jpg              Zélande
+  kinderdijk.jpg           Kinderdijk
+  haarlem.jpg              Haarlem
+  giethoorn.jpg            Giethoorn
+  veluwe.jpg               Parc de la Hoge Veluwe
+
+Géorgie
+  batoumi.jpg              Batoumi
+  mestia.jpg               Mestia (Svanétie)
+  koutaissi.jpg            Koutaïssi
+  borjomi.jpg              Borjomi
+  vardzia.jpg              Vardzia
+  tbilissi.jpg             Tbilissi
+  kazbegi.jpg              Kazbegi (Stepantsminda)
+  sighnaghi.jpg            Sighnaghi (Kakhétie)
+
+Arménie
+  dilijan.jpg              Dilijan
+  sevan.jpg                Lac Sevan
+  erevan.jpg               Erevan
+  garni.jpg                Garni et Gueghard
+  khorvirap.jpg            Khor Virap
+  noravank.jpg             Noravank et Areni
+  tatev.jpg                Tatev
+
+Hongrie
+  tokaj.jpg                Tokaj
+  hortobagy.jpg            Puszta de Hortobágy
+  eger.jpg                 Eger
+  szentendre.jpg           Szentendre et la boucle du Danube
+  budapest.jpg             Budapest
+  tihany.jpg               Lac Balaton (Tihany)
+  heviz.jpg                Hévíz
+
+Bulgarie
+  sofia.jpg                Sofia
+  rila.jpg                 Monastère de Rila
+  bansko.jpg               Bansko et le Pirin
+  plovdiv.jpg              Plovdiv
+  kazanlak.jpg             Vallée des Roses
+  tarnovo.jpg              Veliko Tarnovo
+  nessebar.jpg             Nessebar
+  sozopol.jpg              Sozopol
+
+Bosnie-Herzégovine
+  una.jpg                  Parc de l’Una
+  jajce.jpg                Jajce
+  sarajevo.jpg             Sarajevo
+  mostar.jpg               Mostar
+  kravica.jpg              Kravica et Počitelj
+  trebinje.jpg             Trebinje
+
+Danemark
+  skagen.jpg               Skagen
+  rubjerg.jpg              Rubjerg Knude
+  aarhus.jpg               Aarhus
+  ribe.jpg                 Ribe
+  odense.jpg               Odense
+  monsklint.jpg            Falaises de Møns Klint
+  copenhague.jpg           Copenhague
+
+Rhin et Moselle
+  treves.jpg               Trèves
+  bernkastel.jpg           Bernkastel-Kues
+  cochem.jpg               Cochem
+  eltz.jpg                 Château d’Eltz
+  coblence.jpg             Coblence
+  lorelei.jpg              Rocher de la Lorelei
+  rudesheim.jpg            Rüdesheim

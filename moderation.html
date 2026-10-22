@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Modération · Roadbook</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body { background: var(--lin); }
+    .mod { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
+    .mod-carte { background: var(--papier); border: 1px solid var(--trait); border-radius: var(--rayon); padding: 16px 18px; margin-top: 14px; }
+    .mod-carte h3 { margin: 0 0 4px; font: 700 17px var(--f-sous); }
+    .mod-meta { margin: 0 0 8px; font-size: 14px; color: var(--encre-douce); }
+    .mod-photos { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+    .mod-photos img { width: 150px; height: 110px; object-fit: cover; border-radius: 10px; background: var(--lin); }
+    .mod-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    .mod-onglets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+    .mod-vide { color: var(--encre-douce); }
+    .mod-champs { display: grid; gap: 4px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <main class="mod" id="mod">
+    <h1 class="titre-page">Modération</h1>
+    <p class="chapo">Les avis et les photos des voyageurs attendent ta validation avant d’apparaître dans Roadbook.</p>
+    <div id="mod-contenu"><p class="mod-vide">Chargement…</p></div>
+  </main>
+  <script>window.RB = window.RB || {};</script>
+  <script src="js/config.js"></script>
+  <script src="js/vendor/supabase/supabase.js"></script>
+  <script src="js/moderation.js"></script>
+</body>
+</html>

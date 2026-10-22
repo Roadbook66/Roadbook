@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4F1EA">
+  <title>Roadbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lato:wght@400;700&family=Lora:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="images/icone-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="js/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="css/styles.css?v=2">
+</head>
+<body>
+  <main id="app">
+
+    <!-- ÉCRAN 1 — ACCUEIL -->
+    <section class="ecran ecran--accueil" id="e-accueil" aria-label="Accueil">
+      <div class="accueil-photo">
+        <!-- Remplace images/accueil.jpg par ta propre photo -->
+        <div class="photo-repli" data-paysage></div>
+        <img src="images/accueil.jpg" alt="" onerror="this.remove()">
+      </div>
+      <div class="accueil-contenu">
+        <h1 class="accueil-titre">Roadbook</h1>
+        <button class="btn btn--principal" type="button" data-aller="#/depart">Créer mon road trip</button>
+        <a class="accueil-voyages" href="#/voyages" id="lien-voyages" hidden></a>
+      </div>
+    </section>
+
+    <!-- ÉCRAN 2 — MON DÉPART -->
+    <section class="ecran" id="e-depart" aria-label="Mon départ">
+      <header class="barre">
+        <a class="barre-retour" href="#/">← Accueil</a>
+        <span class="barre-marque">Roadbook</span>
+      </header>
+      <div class="colonne">
+        <h1 class="titre-page">Ton départ</h1>
+        <p class="chapo">Sept questions, tout se fait en cochant. Je m’occupe du reste.</p>
+        <form id="questionnaire" novalidate></form>
+        <p class="credit">Villes : <a href="https://www.geonames.org" target="_blank" rel="noopener">GeoNames</a>, licence CC BY 4.0.</p>
+      </div>
+      <div class="action-bas">
+        <p class="action-message" id="message-depart" role="status" aria-live="polite"></p>
+        <button class="btn btn--principal" type="button" id="btn-generer">Générer mon itinéraire</button>
+      </div>
+    </section>
+
+    <!-- ÉCRAN 3 — MA ROUTE -->
+    <section class="ecran" id="e-route" aria-label="Ma route">
+      <header class="barre">
+        <a class="barre-retour" href="#/depart">← Mes réponses</a>
+        <span class="barre-marque">Roadbook</span>
+      </header>
+      <div class="colonne" id="route-contenu"></div>
+      <div class="action-bas">
+        <button class="btn btn--principal" type="button" data-aller="#/garder">Garder ma route</button>
+      </div>
+    </section>
+
+    <!-- ÉCRAN 4 — MA JOURNÉE -->
+    <section class="ecran ecran--jour" id="e-jour" aria-label="Ma journée">
+      <div id="jour-contenu"></div>
+      <div class="action-bas action-bas--double">
+        <a class="btn btn--secondaire" href="#/route">← Ma route</a>
+        <button class="btn btn--principal" type="button" id="btn-suivant">Jour suivant →</button>
+      </div>
+    </section>
+
+    <!-- ÉCRAN 5 — GARDER MA ROUTE -->
+    <section class="ecran" id="e-garder" aria-label="Garder ma route">
+      <header class="barre">
+        <a class="barre-retour" href="#/route">← Ma route</a>
+        <span class="barre-marque">Roadbook</span>
+      </header>
+      <div class="colonne" id="garder-contenu"></div>
+    </section>
+
+    <!-- MES VOYAGES SAUVEGARDÉS -->
+    <section class="ecran" id="e-voyages" aria-label="Mes voyages sauvegardés">
+      <header class="barre">
+        <a class="barre-retour" href="#/">← Accueil</a>
+        <span class="barre-marque">Roadbook</span>
+      </header>
+      <div class="colonne" id="voyages-contenu"></div>
+    </section>
+  </main>
+
+  <!-- Génération en cours -->
+  <div class="composition" id="composition" hidden aria-live="polite">
+    <div class="composition-route" aria-hidden="true"><span></span></div>
+    <p class="composition-phrase" id="composition-phrase">Je compose ta route…</p>
+  </div>
+
+  <script src="js/villes.js"></script>
+  <script src="js/villes-plus.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/data-europe.js"></script>
+  <script src="js/data-europe2.js"></script>
+  <script src="js/data-terre.js"></script>
+  <script src="js/regions-outils.js"></script>
+  <script src="js/regions-ouest.js"></script>
+  <script src="js/regions-centre.js"></script>
+  <script src="js/regions-sud.js"></script>
+  <script src="js/regions-nord.js"></script>
+  <script src="js/regions-est.js"></script>
+  <script src="js/regions-orient.js"></script>
+  <script src="js/regions-plus.js"></script>
+  <script src="js/regions-fin.js"></script>
+  <script src="js/villes-ouest.js"></script>
+  <script src="js/villes-centre.js"></script>
+  <script src="js/villes-sud.js"></script>
+  <script src="js/villes-nord.js"></script>
+  <script src="js/villes-est.js"></script>
+  <script src="js/villes-orient.js"></script>
+  <script src="js/villes-geonames.js"></script>
+  <script src="js/envies.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/planning.js"></script>
+  <script src="js/regles-route.js"></script>
+  <script src="js/modifier.js"></script>
+  <script src="js/aires.js"></script>
+  <script src="js/photos.js"></script>
+  <script src="js/mes-photos.js"></script>
+  <script src="js/horsligne.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/vendor/supabase/supabase.js"></script>
+  <script src="js/communaute.js"></script>
+  <script src="js/vendor/leaflet/leaflet.js"></script>
+  <script src="js/fond-carte.js"></script>
+  <script src="js/carte.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
