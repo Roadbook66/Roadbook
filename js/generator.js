@@ -977,7 +977,7 @@
   RB.etapesPossibles = function (prec, suiv, ici, exclure) {
     var l = [], vu = {};
     (exclure || []).forEach(function (id) { vu[id] = 1; });
-    RB.circuits.forEach(function (c) {
+    RB.circuits.concat(RB.etapesSeules || []).forEach(function (c) {
       c.stages.forEach(function (s) {
         if (vu[s.id] || !s.rep || !s.rep.length || typeof s.lat !== "number") return;
         var d = vol(ici, s);
@@ -1018,6 +1018,7 @@
     return { km: km, min: minutes(km, ctx.vCircuit) };
   };
 
+  RB._oublierGrilles = function () { grilleEtapes = null; };
   RB._reseau = function () { if (!reseau) construireReseau(); return reseau; };
   RB._dijkstra = function (n, v) { if (!reseau) construireReseau(); return dijkstra(n, v || 85); };
 })();

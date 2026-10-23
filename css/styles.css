@@ -636,3 +636,10 @@ body.carte-ouverte { overflow: hidden; }
   color: var(--encre); background: var(--papier); border: 1.5px solid var(--trait); border-radius: 10px; }
 .verif-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 14px; }
 .verif-msg { margin: 8px 0 0; font-size: 14px; color: var(--terra-fonce); }
+.bloc--admin { margin-top: 8px; }
+.ajout-ou { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.ajout-ou-ou { font-size: 13.5px; color: var(--encre-douce); }
+.ajout-coord { margin: 6px 0 0; font-size: 13.5px; color: var(--vert-fonce); }
+.verif-champ--suite { margin-top: 4px; }
+.carte--choisir, .carte--choisir .leaflet-interactive { cursor: crosshair; }
+.carte-point--nouveau { background: var(--encre); font-size: 18px; }

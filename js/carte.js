@@ -111,6 +111,18 @@
   window.addEventListener("hashchange", fermerPlein);
 
   RB.carte = {};
+  // Mode administratrice : toucher la carte de la journée pour placer un lieu
+  RB.carte.choisirPoint = function (fn) {
+    var carte = cartes[0]; if (!carte) return false;
+    var repere = null;
+    carte.getContainer().classList.add("carte--choisir");
+    carte.on("click", function (e) {
+      if (repere) repere.setLatLng(e.latlng);
+      else repere = L.marker(e.latlng, { icon: point("carte-point--nouveau", "+"), zIndexOffset: 2000 }).addTo(carte);
+      fn(Math.round(e.latlng.lat * 1e5) / 1e5, Math.round(e.latlng.lng * 1e5) / 1e5);
+    });
+    return true;
+  };
 
   // Les nuits du voyage, sans répéter un même lieu sur plusieurs jours de suite
   function etapes(v) {

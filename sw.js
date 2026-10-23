@@ -4,7 +4,7 @@
    À chaque mise à jour de Roadbook, change VERSION : le téléphone reprend
    alors les nouveaux fichiers dès qu’il a du réseau.
    ========================================================================= */
-var VERSION = "roadbook-2026-10-23-7";
+var VERSION = "roadbook-2026-10-23-8";
 var APPLI = VERSION + "-appli";
 var VOYAGES = "roadbook-voyages";   // aires et photos des voyages préparés (gardé d’une version à l’autre)
 

@@ -61,13 +61,17 @@
   function adminOn() { return !!(RB.verifs && RB.verifs.estAdmin()); }
   function statutVerifie() { return '<span class="statut statut--r">' + ICONES.r + "<span>Vérifié</span></span>"; }
   function ligneVerif(vf) {
-    return '<p class="verif-ligne">' + ICONES.r + "<span>Vérifié sur place par Roadbook" + (vf.visite_le ? ", " + esc(moisAnnee(vf.visite_le)) : "") + "</span></p>" +
+    return '<p class="verif-ligne">' + ICONES.r + "<span>" + (vf.ajoute ? "Ajouté et vérifié sur place par Roadbook" : "Vérifié sur place par Roadbook") + (vf.visite_le ? ", " + esc(moisAnnee(vf.visite_le)) : "") + "</span></p>" +
       (vf.note ? '<p class="verif-note">« ' + esc(vf.note) + " »</p>" : "");
   }
   function moisAnnee(d) { try { return new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }); } catch (e) { return ""; } }
   // Les constatations de Roadbook remplacent les données d’OpenStreetMap
   function avecVerif(l) {
     var vf = RB.verifs && RB.communaute ? verifDe(RB.verifs.cleLieu(l)) : null;
+    if (!vf && l.source === "R" && RB.ajouts) {
+      var aj = RB.ajouts.de(l.ajout);
+      if (aj) { var y = {}; Object.keys(l).forEach(function (k) { y[k] = l[k]; }); y.verif = { visite_le: aj.visite_le, note: aj.texte, prix: aj.prix, ajoute: true, eau: aj.eau, vidange: aj.vidange, elec: aj.elec, douche: aj.douche, chiens: aj.chiens }; return y; }
+    }
     if (!vf) return l;
     var x = {}; Object.keys(l).forEach(function (k) { x[k] = l[k]; });
     [["eau", "eau"], ["vidange", "vidange"], ["elec", "elec"], ["douche", "douche"], ["chien", "chiens"]].forEach(function (c) {
@@ -780,10 +784,12 @@
 
   // Un voyage gardé avant l’arrivée des aires : on ajoute les lieux, puis on réaffiche
   function lieuxManquants(v, ensuite) {
+    if (v && RB.ajouts && v.lieuxFaits && (v.ajoutsV || "") !== RB.ajouts.version()) v.lieuxFaits = false;
     if (!v || v.lieuxFaits || v._lieuxEnCours || !RB.aires) return false;
     v._lieuxEnCours = true;
     RB.aires.enrichir(v, function () {
       delete v._lieuxEnCours;
+      if (RB.ajouts) v.ajoutsV = RB.ajouts.version();
       if (v === voyage) garderVoyage(v);
       ensuite();
     });
@@ -866,6 +872,7 @@
     $("#route-contenu").innerHTML =
       (phV ? '<figure class="route-photo"><div class="route-photo-cadre">' + photo(phV.f, phV.lieu, persoV ? phV : null, persoV) + "</div>" + (persoV ? "" : creditPhoto(phV)) + "</figure>" : "") +
       barreAdmin() +
+      (adminOn() ? '<button type="button" class="btn-admin" data-ajout-ouvrir="etape">+ Ajouter une étape à Roadbook</button><div class="verif-form" id="ajout-etape" hidden></div>' : "") +
       '<p class="surtitre">Ta route est prête</p>' +
       '<h1 class="titre-page">' + esc(v.circuit.titre) + "</h1>" +
       '<p class="recap">' + recap(v) + "</p>" +
@@ -1138,7 +1145,8 @@
         (choisi ? "Choisir un autre lieu" : "Je dors ici ce soir") + "</button>" : "") +
       '<p class="lieu-liens"><a href="' + lien + '" target="_blank" rel="noopener">Voir le lieu</a>' +
 lienSite(l) + "</p>" +
-      (adminOn() && cleV ? '<button type="button" class="btn-admin" data-verif-lieu="' + esc(cleV) + '">' + ICONES.r +
+      (adminOn() && l.source === "R" && l.ajout ? '<button type="button" class="btn-admin" data-ajout-retirer="' + esc(l.ajout) + '">Retirer ce lieu ajouté</button>' : "") +
+      (adminOn() && cleV && l.source !== "R" ? '<button type="button" class="btn-admin" data-verif-lieu="' + esc(cleV) + '">' + ICONES.r +
         (vf ? "Modifier ma vérification" : "J’y suis allée : vérifier ce lieu") + "</button>" +
         '<div class="verif-form" data-verif-form="' + esc(cleV) + '" hidden></div>' : "") +
       "</div>";
@@ -1217,15 +1225,25 @@ lienSite(l) + "</p>" +
 
     html += '<section class="bloc planning" id="planning"></section>';
 
+    var ideesAj = RB.ajouts && j.lieuId ? RB.ajouts.idees(j.lieuId) : [];
+    var nomsAj = ideesAj.map(function (x) { return x.nom; });
     html += '<section class="bloc"><h2 class="sous-titre">Si tu as envie…</h2><ul class="reperes">' +
-      j.reperes.map(function (r) {
+      j.reperes.filter(function (r) { return nomsAj.indexOf(r.nom) < 0; }).map(function (r) {
         var cleR = j.lieuId && RB.verifs ? RB.verifs.cleRepere(j.lieuId, r.nom) : "", vfR = cleR ? verifDe(cleR) : null;
         return '<li class="info"><div class="info-tete"><h3>' + esc(r.nom) + "</h3>" + (vfR ? statutVerifie() : statut(r.statut)) + "</div><p>" + esc(r.texte) + "</p>" +
           (r.pourToi && r.pourToi.length ? '<p class="pour-toi">Pour toi · ' + r.pourToi.map(esc).join(", ") + "</p>" : "") +
           (vfR ? ligneVerif(vfR) : "") +
           (adminOn() && cleR ? '<button type="button" class="btn-admin btn-admin--petit" data-verif-repere="' + esc(cleR) + '" data-nom="' + esc(r.nom) + '" data-lat="' + j.lat + '" data-lon="' + j.lon + '" data-pays="' + esc(j.pays || "") + '">' +
             ICONES.r + (vfR ? "Retirer « vérifié »" : "J’y suis allée : vérifié") + "</button>" : "") + "</li>";
-      }).join("") + "</ul></section>";
+      }).join("") +
+      ideesAj.map(function (x) {
+        return '<li class="info"><div class="info-tete"><h3>' + esc(x.nom) + "</h3>" + statutVerifie() + "</div>" + (x.texte ? "<p>" + esc(x.texte) + "</p>" : "") +
+          '<p class="verif-ligne">' + ICONES.r + "<span>Une idée de Roadbook, vérifiée sur place</span></p>" +
+          (adminOn() ? '<button type="button" class="btn-admin btn-admin--petit" data-ajout-retirer="' + esc(x.id) + '">Retirer cette idée</button>' : "") + "</li>";
+      }).join("") + "</ul>" +
+      (adminOn() && j.lieuId && j.type !== "retour" && j.type !== "mer"
+        ? '<button type="button" class="btn-admin" data-ajout-ouvrir="idee">+ Ajouter une idée de visite</button>' +
+          '<div class="verif-form" id="ajout-idee" hidden></div>' : "") + "</section>";
 
     if (typeof j.lat === "number" && j.type !== "mer")
       html += '<section class="bloc"><h2 class="sous-titre">Sur la carte</h2>' +
@@ -1267,6 +1285,9 @@ lienSite(l) + "</p>" +
     } else {
       html += '<div class="bloc bloc--pause"><p>Ce soir, tu dors chez toi. Bienvenue à la maison.</p></div>';
     }
+    if (adminOn() && j.dormir && typeof j.lat === "number")
+      html += '<section class="bloc bloc--admin"><button type="button" class="btn-admin" data-ajout-ouvrir="lieu">+ Ajouter une aire ou un camping près de ' + esc(j.vers) + "</button>" +
+        '<div class="verif-form" id="ajout-lieu" hidden></div></section>';
     html += blocCarnet(j) + blocModifier(v, j);
     html += "</div>";
     $("#jour-contenu").innerHTML = html;
@@ -1796,6 +1817,154 @@ lienSite(l) + "</p>" +
     });
     p.then(redessiner).catch(function () { b.disabled = false; b.textContent = navigator.onLine ? "Pas enregistré, réessaie" : "Il faut du réseau"; });
   });
+  /* ---------- Mode administratrice : ajouter ses propres idées, étapes, aires ---------- */
+  function champsService(prefixe) {
+    return '<div class="verif-grille">' + [["eau", "Eau propre"], ["vidange", "Vidange"], ["elec", "Électricité"], ["douche", "Douches"], ["chiens", "Chiens acceptés"]].map(function (c) {
+      return '<label class="verif-champ"><span>' + c[1] + '</span><select data-a="' + c[0] + '"><option value="">Pas vu</option><option value="oui">Oui</option><option value="non">Non</option></select></label>';
+    }).join("") + '<label class="verif-champ"><span>Prix</span><select data-a="payant"><option value="">Pas vu</option><option value="gratuit">Gratuit</option><option value="payant">Payant</option></select></label></div>';
+  }
+  function boutonsAjout(type, texte) {
+    return '<div class="verif-actions"><button type="button" class="btn btn--principal btn--petit" data-ajout-ok="' + type + '">' + texte + "</button>" +
+      '<button type="button" class="lien-discret" data-ajout-fermer="' + type + '">Annuler</button></div><p class="verif-msg" role="status"></p>';
+  }
+  var FORM_AJOUT = {
+    idee: function () {
+      return '<p class="verif-titre">Une idée de visite à ajouter</p>' +
+        '<label class="verif-champ"><span>Nom</span><input type="text" maxlength="160" data-a="nom" placeholder="ex. Le chemin du fauvisme"></label>' +
+        '<label class="verif-champ"><span>Ce qu’il faut savoir</span><textarea maxlength="600" rows="3" data-a="texte" placeholder="Pourquoi y aller, quand, combien de temps…"></textarea></label>' +
+        boutonsAjout("idee", "Ajouter cette idée");
+    },
+    lieu: function () {
+      return '<p class="verif-titre">Une aire ou un camping à ajouter</p>' +
+        '<label class="verif-champ"><span>Type</span><select data-a="lieu_type"><option value="A">Aire de camping-cars</option><option value="C">Camping</option><option value="P">Parking autorisé aux camping-cars</option></select></label>' +
+        '<label class="verif-champ"><span>Nom</span><input type="text" maxlength="160" data-a="nom" placeholder="ex. Aire du port"></label>' +
+        '<div class="verif-champ"><span>Où ?</span><div class="ajout-ou"><button type="button" class="btn btn--secondaire btn--petit" data-ajout-position>Ma position actuelle</button>' +
+          '<span class="ajout-ou-ou">ou touche la carte de la journée, plus haut</span></div><p class="ajout-coord" data-coord>Pas encore placé.</p>' +
+          '<input type="hidden" data-a="lat"><input type="hidden" data-a="lon"></div>' +
+        '<label class="verif-champ"><span>Date de ta visite</span><input type="date" data-a="visite_le" value="' + aujourdhui() + '"></label>' +
+        champsService() +
+        '<label class="verif-champ"><span>Tarif (facultatif)</span><input type="text" maxlength="40" data-a="prix" placeholder="ex. 12 € la nuit"></label>' +
+        '<label class="verif-champ"><span>Ton mot pour les voyageurs (facultatif)</span><textarea maxlength="600" rows="3" data-a="texte"></textarea></label>' +
+        boutonsAjout("lieu", "Ajouter ce lieu");
+    },
+    etape: function () {
+      return '<p class="verif-titre">Une étape à ajouter à Roadbook</p>' +
+        '<p class="changer-aide">Roadbook la proposera dans les itinéraires qui passent près de là, et dans « Changer cette étape ».</p>' +
+        '<label class="verif-champ"><span>Nom de l’étape</span><input type="text" maxlength="160" data-a="nom" placeholder="ex. Collioure"></label>' +
+        '<div class="verif-champ"><span>Où ?</span><input type="search" class="changer-champ" data-ajout-ville placeholder="Tape une ville ou un village" autocomplete="off">' +
+          '<ul class="changer-liste" data-ajout-villes></ul>' +
+          '<div class="ajout-ou"><button type="button" class="btn btn--secondaire btn--petit" data-ajout-position>Ma position actuelle</button></div>' +
+          '<p class="ajout-coord" data-coord>Pas encore placée.</p><input type="hidden" data-a="lat"><input type="hidden" data-a="lon"><input type="hidden" data-a="pays"></div>' +
+        [1, 2, 3].map(function (k) {
+          return '<label class="verif-champ"><span>Idée de visite ' + k + (k > 1 ? " (facultatif)" : "") + '</span><input type="text" maxlength="160" data-idee-nom="' + k + '" placeholder="' + (k === 1 ? "ex. Le château royal" : "") + '"></label>' +
+            '<label class="verif-champ verif-champ--suite"><textarea maxlength="600" rows="2" data-idee-texte="' + k + '" placeholder="Ce qu’il faut savoir"></textarea></label>';
+        }).join("") +
+        boutonsAjout("etape", "Ajouter cette étape");
+    }
+  };
+  function placer(form, lat, lon, texte) {
+    form.querySelector('[data-a="lat"]').value = lat; form.querySelector('[data-a="lon"]').value = lon;
+    var p = form.querySelector('[data-a="pays"]'); if (p) p.value = paysDe(lat, lon) || "";
+    form.querySelector("[data-coord]").textContent = (texte ? texte + " · " : "Placé : ") + String(lat).replace(".", ",") + " / " + String(lon).replace(".", ",");
+  }
+  document.addEventListener("input", function (e) {
+    var c = e.target.closest("[data-ajout-ville]"); if (!c) return;
+    var form = c.closest(".verif-form"), ul = form.querySelector("[data-ajout-villes]");
+    ul.innerHTML = chercher(c.value).map(function (i) {
+      var x = RB.villes[i];
+      return '<li><button type="button" class="changer-choix" data-ajout-placer="' + i + '"><strong>' + esc(x[0]) + "</strong><span>" + esc(nomPays(x[1])) + "</span></button></li>";
+    }).join("");
+  });
+  document.addEventListener("click", function (e) {
+    if (!RB.ajouts || !adminOn()) return;
+    var b = e.target.closest("[data-ajout-ouvrir]");
+    if (b) {
+      var t = b.dataset.ajoutOuvrir, f = $("#ajout-" + t);
+      if (!f) return;
+      f.innerHTML = FORM_AJOUT[t](); f.hidden = false; b.hidden = true;
+      if (t === "lieu" && RB.carte) RB.carte.choisirPoint(function (la, lo) { placer(f, la, lo, "Placé sur la carte"); });
+      var premier = f.querySelector("input[type=text], input[type=search]"); if (premier) premier.focus();
+      return;
+    }
+    b = e.target.closest("[data-ajout-fermer]");
+    if (b) { redessiner(); return; }
+    b = e.target.closest("[data-ajout-placer]");
+    if (b) {
+      var x = RB.villes[+b.dataset.ajoutPlacer], fp = b.closest(".verif-form");
+      placer(fp, x[2], x[3], x[0]);
+      var nm = fp.querySelector('[data-a="nom"]'); if (nm && !nm.value) nm.value = x[0];
+      fp.querySelector("[data-ajout-villes]").innerHTML = "";
+      return;
+    }
+    b = e.target.closest("[data-ajout-position]");
+    if (b) {
+      var fg = b.closest(".verif-form"), msg = fg.querySelector("[data-coord]");
+      if (!navigator.geolocation) { msg.textContent = "Ton téléphone ne donne pas sa position ici."; return; }
+      msg.textContent = "Je cherche ta position…";
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        placer(fg, Math.round(pos.coords.latitude * 1e5) / 1e5, Math.round(pos.coords.longitude * 1e5) / 1e5, "Ta position");
+      }, function () { msg.textContent = "Position refusée ou introuvable : autorise la localisation, ou choisis autrement."; }, { enableHighAccuracy: true, timeout: 15000 });
+      return;
+    }
+    b = e.target.closest("[data-ajout-retirer]");
+    if (b) {
+      if (!b.classList.contains("btn--confirmer")) { b.classList.add("btn--confirmer"); b.textContent = "Appuie encore pour retirer"; return; }
+      b.disabled = true;
+      RB.ajouts.retirer(b.dataset.ajoutRetirer).then(function () { if (voyage) voyage.lieuxFaits = false; redessiner(); })
+        .catch(function () { b.disabled = false; b.textContent = navigator.onLine ? "Pas retiré, réessaie" : "Il faut du réseau"; });
+      return;
+    }
+    b = e.target.closest("[data-ajout-ok]");
+    if (!b) return;
+    var type = b.dataset.ajoutOk, form = b.closest(".verif-form"), out = form.querySelector(".verif-msg"), ligne = { type: type };
+    form.querySelectorAll("[data-a]").forEach(function (c) { var val = c.value.trim(); if (val) ligne[c.dataset.a] = val; });
+    if (!ligne.nom || ligne.nom.length < 2) { out.textContent = "Donne-lui un nom."; return; }
+    if (ligne.lat) { ligne.lat = +ligne.lat; ligne.lon = +ligne.lon; }
+    var j = /^#\/jour\/(\d+)$/.exec(location.hash), jour = j && voyage ? voyage.jours[+j[1] - 1] : null;
+    if (type === "idee") {
+      if (!jour) return;
+      ligne.etape_id = jour.lieuId; ligne.lat = jour.lat; ligne.lon = jour.lon; ligne.pays = jour.pays || null;
+    } else if (type === "lieu") {
+      if (!ligne.lat) { out.textContent = "Place le lieu : ta position, ou touche la carte de la journée."; return; }
+      ligne.pays = (jour && jour.pays) || paysDe(ligne.lat, ligne.lon) || null;
+    } else {
+      if (!ligne.lat) { out.textContent = "Dis où elle se trouve : choisis une ville, ou ta position."; return; }
+      // Déjà dans Roadbook ? On ajoute alors plutôt des idées sur sa journée
+      var deja = null;
+      RB.circuits.concat(RB.etapesSeules || []).forEach(function (c) { c.stages.forEach(function (st) {
+        if (!deja && (kmVol(st, ligne) < 5 || normaliser(st.nom) === normaliser(ligne.nom))) deja = st;
+      }); });
+      if (deja && !form.dataset.insiste) {
+        form.dataset.insiste = "1";
+        out.textContent = "Roadbook a déjà l’étape « " + deja.nom + " » ici. Tu peux plutôt ajouter tes idées sur sa journée. Pour l’ajouter quand même, appuie encore.";
+        return;
+      }
+      ligne.etape_id = RB.ajouts.nouvelId();
+      ligne.pays = ligne.pays || paysDe(ligne.lat, ligne.lon) || null;
+      ligne.idees = [1, 2, 3].map(function (k) {
+        var n = form.querySelector('[data-idee-nom="' + k + '"]').value.trim(), t = form.querySelector('[data-idee-texte="' + k + '"]').value.trim();
+        return n ? [n.slice(0, 160), t.slice(0, 600)] : null;
+      }).filter(Boolean);
+      if (!ligne.idees.length) { out.textContent = "Ajoute au moins une idée de visite."; return; }
+    }
+    b.disabled = true; out.textContent = "J’enregistre…";
+    RB.ajouts.enregistrer(ligne).then(function () {
+      if (type === "lieu" && voyage) voyage.lieuxFaits = false;
+      if (type === "etape") {
+        form.innerHTML = '<p class="changer-ok">C’est ajouté : « ' + esc(ligne.nom) + " » sera proposée dans les itinéraires qui passent près de là, et dans « Changer cette étape ».</p>" +
+          '<button type="button" class="lien-discret" data-ajout-fermer="etape">Fermer</button>';
+        return;
+      }
+      redessiner();
+    }).catch(function () {
+      b.disabled = false; out.textContent = "Pas enregistré : " + (navigator.onLine ? "réessaie, ou reconnecte-toi sur la page Modération." : "il faut du réseau.");
+    });
+  });
+
+  if (RB.ajouts) {
+    RB.ajouts.charger(false, function (change) { if (change) redessiner(); });
+    window.addEventListener("hashchange", function () { RB.ajouts.charger(false, function (change) { if (change) redessiner(); }); });
+  }
   if (RB.verifs) {
     RB.verifs.admin().then(function (a) { if (a) redessiner(); });
     RB.verifs.charger(false, function (change) { if (change) redessiner(); });

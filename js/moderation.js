@@ -30,11 +30,12 @@
 
   function afficher() {
     boite.innerHTML = '<div class="mod-onglets">' +
-      [["attente", "En attente"], ["signalements", "Signalements"], ["publie", "Publiés"], ["verifs", "Mes vérifications"]].map(function (o) {
+      [["attente", "En attente"], ["signalements", "Signalements"], ["publie", "Publiés"], ["verifs", "Mes vérifications"], ["ajouts", "Mes ajouts"]].map(function (o) {
         return '<button type="button" class="choix choix--petit" data-onglet="' + o[0] + '" aria-pressed="' + (o[0] === onglet) + '"><span class="choix-l">' + o[1] + "</span></button>";
       }).join("") + '<button type="button" class="lien-discret" id="mod-sortir">Me déconnecter</button></div><div id="mod-liste"><p class="mod-vide">Chargement…</p></div>';
     if (onglet === "signalements") return signalements();
     if (onglet === "verifs") return mesVerifs();
+    if (onglet === "ajouts") return mesAjouts();
     var q = sb.from("contributions").select("*").eq("statut", onglet === "attente" ? "en_attente" : "publie")
       .order("cree_le", { ascending: onglet === "attente" }).limit(50);
     q.then(function (r) {
@@ -52,6 +53,23 @@
   function liste(h) { $("#mod-liste").innerHTML = h; }
   // Ce que j’ai vérifié sur place (ajouté depuis l’appli, en mode administratrice)
   var GENRE = { lieu: "Aire, camping ou parking", etape: "Étape", repere: "Idée de visite" };
+  var GENRE_AJOUT = { idee: "Idée de visite", etape: "Étape", lieu: "Aire, camping ou parking" };
+  function mesAjouts() {
+    var intro = '<div class="mod-carte mod-carte--info"><p><strong>Pour ajouter :</strong> reste connectée ici, puis ouvre <a href="./">Roadbook</a> dans ce même navigateur. ' +
+      "« + Ajouter une étape » est en haut de Ma route ; « + Ajouter une idée de visite » et « + Ajouter une aire ou un camping » sont sur chaque journée.</p></div>";
+    sb.from("ajouts").select("*").order("cree_le", { ascending: false }).limit(500).then(function (r) {
+      if (r.error) return liste(intro + '<p class="mod-vide">Impossible de charger tes ajouts.</p>');
+      if (!r.data.length) return liste(intro + '<p class="mod-vide">Aucun ajout pour l’instant.</p>');
+      liste(intro + r.data.map(function (x) {
+        var idees = (x.idees || []).map(function (i) { return "<li><strong>" + esc(i[0]) + "</strong>" + (i[1] ? " · " + esc(i[1]) : "") + "</li>"; }).join("");
+        return '<div class="mod-carte" data-ajout="' + esc(x.id) + '"><h3>' + esc(x.nom) + "</h3>" +
+          '<p class="mod-meta">' + GENRE_AJOUT[x.type] + (x.pays ? " · " + esc(x.pays) : "") + " · ajouté le " + new Date(x.cree_le).toLocaleDateString("fr-FR") +
+          (x.lat != null ? ' · <a href="https://www.openstreetmap.org/?mlat=' + x.lat + "&mlon=" + x.lon + '#map=15/' + x.lat + "/" + x.lon + '" target="_blank" rel="noopener">voir sur la carte</a>' : "") + "</p>" +
+          (x.texte ? "<p>" + esc(x.texte) + "</p>" : "") + (idees ? "<ul>" + idees + "</ul>" : "") +
+          '<div class="mod-actions"><button type="button" class="btn btn--secondaire btn--petit" data-ajout-retirer>Retirer cet ajout</button></div><p data-msg></p></div>';
+      }).join(""));
+    });
+  }
   function mesVerifs() {
     var intro = '<div class="mod-carte mod-carte--info"><p><strong>Pour vérifier un lieu :</strong> reste connectée ici, puis ouvre ' +
       '<a href="./">Roadbook</a> dans ce même navigateur. Sur chaque journée, des boutons « J’y suis allée » apparaissent, visibles par toi seule.</p></div>';
@@ -129,6 +147,15 @@
     var o = e.target.closest("[data-onglet]");
     if (o) { onglet = o.dataset.onglet; afficher(); return; }
     if (e.target.closest("#mod-sortir")) { sb.auth.signOut().then(function () { connexion(); }); return; }
+    var ra = e.target.closest("[data-ajout-retirer]");
+    if (ra) {
+      var ca = ra.closest(".mod-carte");
+      if (!ra.classList.contains("btn--confirmer")) { ra.classList.add("btn--confirmer"); ra.textContent = "Appuie encore pour retirer"; return; }
+      sb.from("ajouts").delete().eq("id", ca.dataset.ajout).then(function (r) {
+        if (r.error) ca.querySelector("[data-msg]").textContent = "Ça n’a pas marché : " + r.error.message; else ca.remove();
+      });
+      return;
+    }
     var rv = e.target.closest("[data-verif-retirer]");
     if (rv) {
       var cv = rv.closest(".mod-carte");

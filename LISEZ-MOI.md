@@ -210,4 +210,11 @@ Un autre navigateur ou un autre appareil ne voit pas ces voyages.
 - Table Supabase `verifications` (clé `lieu:<lat,lon>`, `etape:<id>`, `repere:<id>:<nom>`) : lisible par tous,
   écrite seulement par les modératrices (RLS). Gardée dans le téléphone (`roadbook.verifs`) pour rouler sans réseau.
 - Onglet « Mes vérifications » dans `moderation.html` pour tout revoir ou retirer.
+- **Ajouter ses propres contenus** (table Supabase `ajouts`, mêmes règles) :
+  « + Ajouter une étape à Roadbook » en haut de Ma route (nom, ville ou position, 1 à 3 idées de visite) ;
+  « + Ajouter une idée de visite » et « + Ajouter une aire ou un camping » (position du téléphone ou
+  toucher la carte) sur chaque journée. `RB.ajouts` les mêle aux données : une étape entre dans la région
+  la plus proche (moins de 120 km, à la place qui allonge le moins la route), sinon dans `RB.etapesSeules`
+  (proposée seulement dans « Changer cette étape ») ; les aires passent dans `RB.airesEnPlus` et sont
+  choisies en premier pour la nuit. Onglet « Mes ajouts » dans `moderation.html`.
 

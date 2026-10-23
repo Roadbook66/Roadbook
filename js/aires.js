@@ -61,6 +61,11 @@
         if (d <= rayon) res.push({ l: l, d: d });
       });
     }
+    // Les aires et campings ajoutés par Roadbook (mode administratrice)
+    (RB.airesEnPlus || []).forEach(function (l) {
+      var d = km(la, lo, l[1], l[2]);
+      if (d <= rayon) res.push({ l: l, d: d });
+    });
     return res.sort(function (a, b) { return a.d - b.d; });
   };
 
@@ -92,7 +97,7 @@
     var l = x.l;
     return { type: l[0], nom: String(l[3] || "").replace(/^["«\s]+|["»\s]+$/g, ""), lat: l[1], lon: l[2], km: Math.round(x.d * 10) / 10,
       eau: l[4], vidange: l[5], elec: l[6], douche: l[7], chien: l[8], payant: l[9],
-      capacite: l[10], horaires: l[11], site: l[12], ville: l[13], source: l[14] || "" };
+      capacite: l[10], horaires: l[11], site: l[12], ville: l[13], source: l[14] || "", ajout: l[15] || null };
   }
   function score(x, prefere) {
     var l = x.l, s = x.d;
@@ -101,6 +106,7 @@
     if (l[6] === 1) s -= 1;
     if (l[3]) s -= 1;                                  // un lieu qui a un nom est plus facile à trouver
     if (prefere && l[0] !== prefere) s += 1.5;
+    if (l[14] === "R") s -= 8;                         // ajouté et vérifié par Roadbook : en premier
     return s;
   }
   function meilleur(liste, types, prefere) {

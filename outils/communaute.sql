@@ -123,3 +123,40 @@ drop policy if exists "vérifier : changer" on public.verifications;
 create policy "vérifier : changer" on public.verifications for update to authenticated using (public.est_moderateur()) with check (public.est_moderateur());
 drop policy if exists "vérifier : retirer" on public.verifications;
 create policy "vérifier : retirer" on public.verifications for delete to authenticated using (public.est_moderateur());
+
+-- =========================================================================
+-- Les ajouts de Roadbook : idées de visite, étapes, aires et campings ajoutés
+-- depuis l’appli (mode administratrice). Lisibles par tous, écrits par les modératrices.
+-- =========================================================================
+create table if not exists public.ajouts (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('idee','etape','lieu')),
+  etape_id text check (char_length(etape_id) <= 80),
+  nom text not null check (char_length(btrim(nom)) between 2 and 160),
+  texte text check (char_length(texte) <= 600),
+  idees jsonb check (idees is null or (jsonb_typeof(idees) = 'array' and jsonb_array_length(idees) <= 6)),
+  lat double precision check (lat between -90 and 90),
+  lon double precision check (lon between -180 and 180),
+  pays text check (char_length(pays) <= 3),
+  lieu_type text check (lieu_type in ('A','C','P')),
+  eau text check (eau in ('oui','non')),
+  vidange text check (vidange in ('oui','non')),
+  elec text check (elec in ('oui','non')),
+  douche text check (douche in ('oui','non')),
+  chiens text check (chiens in ('oui','non')),
+  payant text check (payant in ('gratuit','payant')),
+  prix text check (char_length(prix) <= 40),
+  visite_le date,
+  cree_le timestamptz not null default now(),
+  maj_le timestamptz not null default now(),
+  check (type = 'idee' or (lat is not null and lon is not null))
+);
+alter table public.ajouts enable row level security;
+drop policy if exists "lire les ajouts" on public.ajouts;
+create policy "lire les ajouts" on public.ajouts for select to anon, authenticated using (true);
+drop policy if exists "ajouter : créer" on public.ajouts;
+create policy "ajouter : créer" on public.ajouts for insert to authenticated with check (public.est_moderateur());
+drop policy if exists "ajouter : changer" on public.ajouts;
+create policy "ajouter : changer" on public.ajouts for update to authenticated using (public.est_moderateur()) with check (public.est_moderateur());
+drop policy if exists "ajouter : retirer" on public.ajouts;
+create policy "ajouter : retirer" on public.ajouts for delete to authenticated using (public.est_moderateur());

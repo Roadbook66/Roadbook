@@ -134,6 +134,7 @@
      Tout le monde les lit ; seule une modératrice connectée (page moderation.html,
      même navigateur) peut en ajouter. Gardées dans le téléphone pour rouler sans réseau. */
   var CLE_VERIFS = "roadbook.verifs", verifs = lire(CLE_VERIFS, { le: 0, l: {} }), admin = null, clientAdmin = null;
+  if (!verifs || typeof verifs.l !== "object" || !verifs.l) verifs = { le: 0, l: {} };
   function pretAdmin() {
     if (clientAdmin) return clientAdmin;
     var c = RB.config || {};
@@ -156,8 +157,9 @@
     if (!c || !navigator.onLine || (!force && Date.now() - verifs.le < 300000)) { if (fin) fin(false); return; }
     c.from("verifications").select("*").limit(5000).then(function (r) {
       if (r.error) throw r.error;
+      if (!Array.isArray(r.data)) throw new Error("réponse inattendue");
       var l = {};
-      (r.data || []).forEach(function (x) { l[x.cle] = x; });
+      r.data.forEach(function (x) { l[x.cle] = x; });
       var change = JSON.stringify(l) !== JSON.stringify(verifs.l);
       verifs = { le: Date.now(), l: l };
       ecrire(CLE_VERIFS, verifs);
@@ -196,4 +198,109 @@
     var c = pretAdmin(); admin = false;
     return c ? c.auth.signOut().catch(function () {}) : Promise.resolve();
   };
+
+  /* ---------- Les ajouts de Roadbook : idées de visite, étapes, aires et campings ----------
+     Ajoutés depuis l’appli en mode administratrice, puis mêlés aux données de Roadbook :
+     les nouvelles étapes entrent dans les itinéraires, les aires dans « Où dormir ». */
+  var CLE_AJOUTS = "roadbook.ajouts", ajouts = lire(CLE_AJOUTS, { le: 0, l: [] });
+  if (!ajouts || !Array.isArray(ajouts.l)) ajouts = { le: 0, l: [] };
+  function vol(a, b) {
+    var r = Math.PI / 180, x = (b.lon - a.lon) * r * Math.cos((a.lat + b.lat) / 2 * r), y = (b.lat - a.lat) * r;
+    return 6371 * Math.sqrt(x * x + y * y);
+  }
+  function oui(v) { return v === "oui" ? 1 : v === "non" ? 0 : 2; }
+  function marquer(r) { r._ajout = true; return r; }
+  function appliquer() {
+    if (!RB.circuits) return;
+    try { appliquerVraiment(); } catch (e) { /* un ajout mal formé ne doit jamais bloquer l’appli */ }
+  }
+  function appliquerVraiment() {
+    // On retire d’abord ce qui avait été mêlé, puis on remet la liste à jour
+    RB.circuits.forEach(function (c) {
+      c.stages = c.stages.filter(function (st) { return !st._ajout; });
+      c.stages.forEach(function (st) { if (st.rep && st.rep.some(function (r) { return r._ajout; })) st.rep = st.rep.filter(function (r) { return !r._ajout; }); });
+    });
+    RB.etapesSeules = [];
+    var parId = {};
+    RB.circuits.forEach(function (c) { c.stages.forEach(function (st) { parId[st.id] = st; }); });
+    ajouts.l.filter(function (a) { return a.type === "etape" && typeof a.lat === "number"; }).forEach(function (a) {
+      var st = { id: a.etape_id, nom: a.nom, lat: a.lat, lon: a.lon, pause: 0, _ajout: true,
+        rep: (a.idees || []).filter(function (x) { return x && x[0]; }).map(function (x) { return marquer([x[0], x[1] || "", "r"]); }),
+        route: ["p", 3, "", ""], aire: ["près de " + a.nom, "c", null, null, null], camp: ["près de " + a.nom, "c", null, null, null] };
+      if (!st.rep.length) st.rep.push(marquer(["Le cœur de " + a.nom, a.texte || "Une balade à pied pour découvrir les lieux.", "r"]));
+      // Dans la région la plus proche (moins de 120 km), à la place qui allonge le moins la route
+      var best = null, bd = 120;
+      RB.circuits.forEach(function (c) { c.stages.forEach(function (x) { var d = vol(x, st); if (d < bd) { bd = d; best = c; } }); });
+      if (best) {
+        var l = best.stages, pos = 0, cout = vol(st, l[0]);
+        for (var k = 0; k < l.length - 1; k++) { var d2 = vol(l[k], st) + vol(st, l[k + 1]) - vol(l[k], l[k + 1]); if (d2 < cout) { cout = d2; pos = k + 1; } }
+        if (vol(l[l.length - 1], st) < cout) pos = l.length;
+        l.splice(pos, 0, st);
+      } else {
+        RB.etapesSeules.push({ id: a.etape_id, dest: a.nom, pays: String(a.pays || "").toLowerCase(), paysCode: a.pays || "", stages: [st] });
+      }
+      parId[st.id] = st;
+    });
+    ajouts.l.filter(function (a) { return a.type === "idee" && a.etape_id; }).forEach(function (a) {
+      var st = parId[a.etape_id];
+      if (st) (st.rep = st.rep || []).push(marquer([a.nom, a.texte || "", "r"]));
+    });
+    RB.airesEnPlus = ajouts.l.filter(function (a) { return a.type === "lieu" && typeof a.lat === "number"; }).map(function (a) {
+      return [a.lieu_type || "A", a.lat, a.lon, a.nom, oui(a.eau), oui(a.vidange), oui(a.elec), oui(a.douche), oui(a.chiens),
+        a.payant === "gratuit" ? 0 : a.payant === "payant" ? 1 : null, null, null, null, null, "R", a.id];
+    });
+    if (RB._oublierGrilles) RB._oublierGrilles();
+  }
+  appliquer();
+
+  RB.ajouts = {};
+  RB.ajouts.tous = function () { return ajouts.l; };
+  RB.ajouts.de = function (id) { return ajouts.l.filter(function (a) { return a.id === id; })[0] || null; };
+  // Les idées ajoutées pour une étape (y compris celles d’une étape ajoutée)
+  RB.ajouts.idees = function (etapeId) {
+    var res = [];
+    ajouts.l.forEach(function (a) {
+      if (a.type === "idee" && a.etape_id === etapeId) res.push({ nom: a.nom, texte: a.texte || "", id: a.id });
+    });
+    return res;
+  };
+  // Change quand les aires ajoutées changent : les voyages gardés recalculent alors leurs lieux
+  RB.ajouts.version = function () {
+    return ajouts.l.filter(function (a) { return a.type === "lieu"; }).map(function (a) { return a.id + a.maj_le; }).sort().join("|");
+  };
+  RB.ajouts.charger = function (force, fin) {
+    var c = pret();
+    if (!c || !navigator.onLine || (!force && Date.now() - ajouts.le < 300000)) { if (fin) fin(false); return; }
+    c.from("ajouts").select("*").order("cree_le").limit(5000).then(function (r) {
+      if (r.error) throw r.error;
+      if (!Array.isArray(r.data)) throw new Error("réponse inattendue");
+      var l = r.data, change = JSON.stringify(l) !== JSON.stringify(ajouts.l);
+      ajouts = { le: Date.now(), l: l };
+      ecrire(CLE_AJOUTS, ajouts);
+      if (change) appliquer();
+      if (fin) fin(change);
+    }).catch(function () { if (fin) fin(false); });
+  };
+  RB.ajouts.enregistrer = function (ligne) {
+    var c = pretAdmin();
+    if (!c || !admin) return Promise.reject(new Error("pas connectée"));
+    ligne.id = ligne.id || uuid();
+    ligne.maj_le = new Date().toISOString();
+    return c.from("ajouts").upsert(ligne).then(function (r) {
+      if (r.error) throw r.error;
+      ajouts.l = ajouts.l.filter(function (a) { return a.id !== ligne.id; }).concat([ligne]);
+      ecrire(CLE_AJOUTS, ajouts); appliquer();
+      return ligne;
+    });
+  };
+  RB.ajouts.retirer = function (id) {
+    var c = pretAdmin();
+    if (!c || !admin) return Promise.reject(new Error("pas connectée"));
+    return c.from("ajouts").delete().eq("id", id).then(function (r) {
+      if (r.error) throw r.error;
+      ajouts.l = ajouts.l.filter(function (a) { return a.id !== id; });
+      ecrire(CLE_AJOUTS, ajouts); appliquer();
+    });
+  };
+  RB.ajouts.nouvelId = function () { return "rb-" + uuid().slice(0, 8); };
 })();
