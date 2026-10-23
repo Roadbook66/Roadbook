@@ -176,6 +176,10 @@ Un autre navigateur ou un autre appareil ne voit pas ces voyages.
 - `js/modifier.js` : « Rester un jour de plus » (ajoute une journée sur place), « Retirer cette journée
   sur place » et « Sauter cette étape » (avec ses journées sur place ; la distance vers l’étape suivante
   est alors estimée). Les jours, les dates et le total de kilomètres sont recalculés.
+- « Changer cette étape » (sur Ma route, ou « Choisir une autre étape » dans la journée) : jusqu’à 8 étapes
+  préparées proches et sur le chemin (`RB.modifier.propositions`, sans celles déjà au programme), ou une
+  ville au choix (moins de 600 km). Deux appuis pour confirmer. La journée suivante part de la nouvelle
+  étape (distance estimée), et les aires et campings sont recalculés.
 - Sur chaque journée : « Mon carnet » (j’y suis allé, un avis, une note) et « Je dors ici ce soir »
   pour choisir son aire ou son camping. Tout est gardé avec le voyage, et Ma route l’affiche.
 

@@ -9,6 +9,7 @@
     var r = Math.PI / 180, x = (b.lon - a.lon) * r * Math.cos((a.lat + b.lat) / 2 * r), y = (b.lat - a.lat) * r;
     return 6371 * Math.sqrt(x * x + y * y);
   }
+  function simple(t) { return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s*\(.*\)\s*/g, "").trim(); }
   function copie(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 
   // Numéros, dates et total après une modification
@@ -43,6 +44,54 @@
     if (j.type !== "etape" && j.type !== "arrivee") return false;
     var suiv = v.jours[j.n + surPlace(v, j)];
     return j.n > 1 && !!suiv && suiv.type !== "mer";
+  };
+
+  // Changer une étape : d’autres étapes proches, ou une ville au choix
+  RB.modifier.peutChanger = function (v, j) {
+    return (j.type === "etape" || j.type === "arrivee") && !!j.dormir && !!RB.etapesPossibles;
+  };
+  function avant(v, n) { var p = v.jours[n - 2]; return p ? { lat: p.lat, lon: p.lon, nom: p.vers } : { lat: v.maison.lat, lon: v.maison.lon, nom: v.maison.nom }; }
+  function apres(v, n) { var j = v.jours[n - 1]; return v.jours[n - 1 + 1 + surPlace(v, j)] || null; }
+  RB.modifier.propositions = function (v, n) {
+    var j = v.jours[n - 1], suiv = apres(v, n);
+    var deja = v.jours.map(function (x) { return x.lieuId; });
+    // Pas une étape déjà au programme, ni presque au même endroit (moins de 10 km), ni deux fois la même
+    var pris = v.jours.filter(function (x) { return typeof x.lat === "number" && x.type !== "retour"; });
+    var nomsPris = v.jours.map(function (x) { return simple(x.vers); });
+    var l = [];
+    RB.etapesPossibles(avant(v, n), suiv && suiv.type !== "retour" ? suiv : null, { lat: j.lat, lon: j.lon }, deja).forEach(function (x) {
+      if (l.length >= 8) return;
+      if (pris.some(function (p) { return km(p, x.s) < 10; })) return;
+      if (l.some(function (y) { return km(y.s, x.s) < 10; })) return;
+      if (nomsPris.some(function (nm) { var a = simple(x.s.nom); return nm && (nm.indexOf(a) >= 0 || a.indexOf(nm) >= 0); })) return;
+      l.push(x);
+    });
+    return l;
+  };
+  RB.modifier.changerEtape = function (v, n, choix) {
+    var j = v.jours[n - 1];
+    if (!j || !RB.modifier.peutChanger(v, j)) return false;
+    var a = v.reponses || {}, k = 1 + surPlace(v, j), prec = avant(v, n);
+    var nouveaux = [RB.jourVers(a, choix, j.type, prec.nom, prec)];
+    for (var i = 1; i < k; i++) nouveaux.push(RB.jourVers(a, choix, "pause", choix.s.nom, null));
+    nouveaux.forEach(function (x) { x.region = j.region || x.region; x.paysDepuis = x === nouveaux[0] ? (v.jours[n - 2] || {}).pays || (v.maison && v.maison.pays) : x.pays; });
+    // Une ville au choix : la photo de l’étape préparée la plus proche (moins de 20 km), s’il y en a une
+    if (/^ville-/.test(choix.s.id)) {
+      var proche = null, dp = 20;
+      RB.circuits.forEach(function (c) { c.stages.forEach(function (s) { var d = km(s, choix.s); if (d < dp) { dp = d; proche = s; } }); });
+      nouveaux.forEach(function (x) { if (proche) x.photoLieu = proche.id; });
+    }
+    var suiv = v.jours[n - 1 + k];
+    v.jours.splice.apply(v.jours, [n - 1, k].concat(nouveaux));
+    if (suiv && suiv.type !== "mer") {
+      var t = RB.trajetEstime(a, choix.s, suiv);
+      suiv.depuis = choix.s.nom; suiv.paysDepuis = nouveaux[0].pays;
+      suiv.km = t.km; suiv.min = t.min; suiv.estime = true;
+      delete suiv.planning;
+    }
+    v.lieuxFaits = false;
+    recalculer(v);
+    return true;
   };
 
   RB.modifier.resterUnJour = function (v, n) {

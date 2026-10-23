@@ -759,7 +759,7 @@
     v._lieuxEnCours = true;
     RB.aires.enrichir(v, function () {
       delete v._lieuxEnCours;
-      if (v === voyage) memoire.ecrire(CLE.route, v);
+      if (v === voyage) garderVoyage(v);
       ensuite();
     });
     return true;
@@ -788,7 +788,12 @@
           (j.carnet && j.carnet.fait ? '<span class="jour-fait">' + ICONES.r + "J’y suis allé</span>" : "") +
           (j.carnet && j.carnet.note ? '<span class="jour-note">· une note</span>' : "") +
           (j.ajoute ? '<span class="jour-note">· jour ajouté</span>' : "") + "</span></span>" +
-        '<span class="jour-fleche" aria-hidden="true">›</span></a></li>';
+        '<span class="jour-fleche" aria-hidden="true">›</span></a>' +
+        (RB.modifier && RB.modifier.peutChanger(v, j)
+          ? '<button type="button" class="changer-btn" data-changer="' + j.n + '" aria-expanded="false">Changer cette étape</button>' +
+            '<div class="changer" id="changer-' + j.n + '" hidden></div>'
+          : "") +
+        "</li>";
     }
     var lignes;
     if (v.regions && v.regions.length > 1) {
@@ -870,9 +875,98 @@
       '<p class="note-essai">Version d’essai : les repères et les statuts sont des données d’exemple.</p>' +
       '<p class="credit">Aires, campings et parkings : © les contributeurs d’<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> ; en France, offices de tourisme via <a href="https://www.datatourisme.fr" target="_blank" rel="noopener">DATAtourisme</a>. À confirmer sur place.</p>';
     majHorsLigne(v);
+    brancherChanger(v);
+    if (changerOuvrir) { var no = changerOuvrir; changerOuvrir = null; ouvrirChanger(v, no, true); }
+    if (changerFait) montrerChange(changerFait);
     setTimeout(function () {
       if (RB.carte && location.hash === "#/route") RB.carte.route($("#carte-route"), v, $("#trace-route"));
     }, 60);
+  }
+
+  /* ---------- Changer une étape qui ne plaît pas ---------- */
+  var changerOuvrir = null, changerFait = null, changerListe = {};
+  function kmVol(a, b) {
+    var r = Math.PI / 180, x = (b.lon - a.lon) * r * Math.cos((a.lat + b.lat) / 2 * r), y = (b.lat - a.lat) * r;
+    return 6371 * Math.sqrt(x * x + y * y);
+  }
+  function choixHtml(x, i, j) {
+    var rep = x.s.rep && x.s.rep[0] ? x.s.rep[0][0] : "";
+    var d = Math.round(kmVol(j, x.s) / 5) * 5;
+    var code = paysDe(x.s.lat, x.s.lon) || x.pays, pays = nomPays(code);
+    return '<li><button type="button" class="changer-choix" data-choix="' + i + '">' +
+      "<strong>" + esc(x.s.nom) + "</strong>" +
+      "<span>" + esc(pays) +
+        (d >= 5 ? " · à " + nombre(d) + "\u00a0km de " + esc(j.vers) : "") + "</span>" +
+      (rep ? "<em>" + esc(rep) + "</em>" : "") + "</button></li>";
+  }
+  function ouvrirChanger(v, n, defiler) {
+    var j = v.jours[n - 1], boite = $("#changer-" + n), bouton = document.querySelector('[data-changer="' + n + '"]');
+    if (!j || !boite) return;
+    var det = boite.closest("details"); if (det) det.open = true;
+    var props = RB.modifier.propositions(v, n);
+    changerListe = { n: n, choix: props.slice() };
+    boite.innerHTML = '<p class="changer-titre">Une autre étape à la place de ' + esc(j.vers) + "</p>" +
+      (props.length ? '<p class="changer-aide">Des étapes proches, sur ton chemin. Touche celle qui te plaît.</p>' +
+        '<ul class="changer-liste">' + props.map(function (x, i) { return choixHtml(x, i, j); }).join("") + "</ul>"
+        : '<p class="changer-aide">Pas d’autre étape préparée près d’ici. Choisis une ville ci-dessous.</p>') +
+      '<label class="changer-label" for="changer-ville-' + n + '">Ou une ville de ton choix</label>' +
+      '<input type="search" class="changer-champ" id="changer-ville-' + n + '" autocomplete="off" placeholder="Tape le nom d’une ville">' +
+      '<ul class="changer-liste" id="changer-villes-' + n + '"></ul>' +
+      '<p class="changer-note">La journée suivante part de ta nouvelle étape ; ses kilomètres sont estimés. Ton voyage garde le même nombre de jours.</p>' +
+      '<button type="button" class="lien-discret" data-changer-fermer="' + n + '">Garder ' + esc(j.vers) + "</button>";
+    boite.hidden = false;
+    if (bouton) { bouton.setAttribute("aria-expanded", "true"); bouton.hidden = true; }
+    var champ = $("#changer-ville-" + n);
+    champ.addEventListener("input", function () {
+      var base = props.length;
+      changerListe.choix.length = base;
+      var res = chercher(champ.value).map(function (i) { return RB.villes[i]; })
+        .filter(function (x) { return kmVol(j, { lat: x[2], lon: x[3] }) < 600 && normaliser(x[0]) !== normaliser(j.vers); });
+      res.forEach(function (x) { changerListe.choix.push(RB.etapeVille(x)); });
+      $("#changer-villes-" + n).innerHTML = res.length ? res.map(function (x, k) { return choixHtml(changerListe.choix[base + k], base + k, j); }).join("")
+        : (champ.value.trim().length >= 3 ? '<li class="changer-vide">Pas de ville de ce nom à moins de 600 km.</li>' : "");
+    });
+    if (defiler) setTimeout(function () { boite.scrollIntoView({ block: "center" }); }, 80);
+  }
+  function montrerChange(cf) {
+    var li = document.querySelector('[data-changer="' + cf.n + '"]');
+    li = li && li.closest("li"); if (!li) return;
+    var det = li.closest("details"); if (det) det.open = true;
+    var p = document.createElement("p");
+    p.className = "changer-ok"; p.setAttribute("role", "status");
+    p.textContent = "C’est changé : jour " + cf.n + ", tu dors à " + cf.nom + ". Les aires et campings autour sont mis à jour.";
+    li.appendChild(p);
+    if (!cf.vu) { cf.vu = true; setTimeout(function () { li.scrollIntoView({ block: "center" }); }, 80); }
+    setTimeout(function () { if (changerFait === cf) changerFait = null; }, 4000);
+  }
+  function brancherChanger(v) {
+    var boite = $("#route-contenu");
+    boite.onclick = function (e) {
+      var b = e.target.closest("[data-changer]");
+      if (b) { ouvrirChanger(v, +b.dataset.changer); return; }
+      var f = e.target.closest("[data-changer-fermer]");
+      if (f) {
+        var n = +f.dataset.changerFermer, p = $("#changer-" + n), bt = document.querySelector('[data-changer="' + n + '"]');
+        if (p) { p.hidden = true; p.innerHTML = ""; }
+        if (bt) { bt.hidden = false; bt.setAttribute("aria-expanded", "false"); bt.focus(); }
+        return;
+      }
+      var c = e.target.closest("[data-choix]");
+      if (!c) return;
+      // Deux appuis : le premier demande confirmation
+      if (!c.classList.contains("changer-choix--confirmer")) {
+        boite.querySelectorAll(".changer-choix--confirmer").forEach(function (x) { x.classList.remove("changer-choix--confirmer"); var m = x.querySelector(".changer-confirmer"); if (m) m.remove(); });
+        c.classList.add("changer-choix--confirmer");
+        c.insertAdjacentHTML("beforeend", '<span class="changer-confirmer">Appuie encore pour dormir ici</span>');
+        return;
+      }
+      var choix = changerListe.choix[+c.dataset.choix], nj = changerListe.n;
+      if (!choix || !RB.modifier.changerEtape(v, nj, choix)) return;
+      garderVoyage(v);
+      try { localStorage.removeItem("roadbook.horsligne"); } catch (er) {}
+      changerFait = { n: nj, nom: choix.s.nom };
+      afficherRoute();
+    };
   }
 
   /* ---------- Le voyage sans réseau ---------- */
@@ -1287,11 +1381,12 @@ lienSite(l) + "</p>" +
   /* ---------- Modifier ma route depuis la journée ---------- */
   function blocModifier(v, j) {
     if (!RB.modifier) return "";
-    var rester = RB.modifier.peutRester(v, j), retirer = RB.modifier.peutRetirer(v, j);
-    if (!rester && !retirer) return "";
+    var rester = RB.modifier.peutRester(v, j), retirer = RB.modifier.peutRetirer(v, j), changer = RB.modifier.peutChanger(v, j);
+    if (!rester && !retirer && !changer) return "";
     return '<section class="bloc modifier" id="modifier"><h2 class="sous-titre">Changer ma route</h2>' +
       '<div class="modifier-actions">' +
       (rester ? '<button type="button" class="btn btn--secondaire btn--petit" data-modif="rester">Rester un jour de plus à ' + esc(j.vers) + "</button>" : "") +
+      (changer ? '<button type="button" class="btn btn--secondaire btn--petit" data-changer-etape="' + j.n + '">Choisir une autre étape</button>' : "") +
       (retirer ? '<button type="button" class="btn btn--secondaire btn--petit" data-modif="retirer">' +
         (j.type === "pause" ? "Retirer cette journée sur place" : "Sauter cette étape") + "</button>" : "") +
       "</div>" +
@@ -1318,7 +1413,7 @@ lienSite(l) + "</p>" +
     });
     boite.onclick = function (e) {
       if (gererCommunaute(e, j)) return;
-      var b = e.target.closest("[data-carnet], [data-avis], [data-nuit], [data-modif]");
+      var b = e.target.closest("[data-carnet], [data-avis], [data-nuit], [data-modif], [data-changer-etape]");
       if (!b) return;
       if (b.dataset.carnet === "fait") {
         j.carnet = j.carnet || {};
@@ -1340,6 +1435,7 @@ lienSite(l) + "</p>" +
         var y = window.scrollY; afficherJour(n); window.scrollTo(0, y);
         return;
       }
+      if (b.dataset.changerEtape) { changerOuvrir = +b.dataset.changerEtape; location.hash = "#/route"; return; }
       if (b.dataset.modif) {
         // Deux appuis : le premier demande confirmation, sans fenêtre du navigateur
         if (!b.classList.contains("btn--confirmer")) {

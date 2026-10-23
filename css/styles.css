@@ -210,6 +210,31 @@ button { font: inherit; color: inherit; }
 .jour-statut { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; }
 .jour-points { font-size: 13px; color: var(--encre-douce); }
 .jour-fleche { font-size: 26px; color: var(--vert); line-height: 1; }
+/* Changer une étape */
+.changer-btn { display: inline-block; margin: 6px 0 0 70px; padding: 8px 2px; background: none; border: 0; cursor: pointer;
+  font: 700 14px var(--f-sous); color: var(--vert-fonce); text-decoration: underline; text-underline-offset: 3px; }
+.changer-btn:hover { color: var(--terra-fonce); }
+.changer { margin-top: 8px; padding: 16px; background: var(--papier); border: 1.5px solid var(--vert); border-radius: var(--rayon); }
+.changer-titre { margin: 0; font: 600 18px/1.3 var(--f-titre); }
+.changer-aide, .changer-note { margin: 6px 0 0; font-size: 14px; color: var(--encre-douce); }
+.changer-note { margin-top: 12px; }
+.changer-liste { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.changer-choix { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; cursor: pointer;
+  background: var(--lin); border: 1.5px solid var(--trait); border-radius: 12px; font: 400 14px/1.4 var(--f-corps); color: var(--encre-douce); }
+.changer-choix strong { font: 700 16px var(--f-sous); color: var(--encre); }
+.changer-choix em { font-style: normal; color: var(--encre); }
+.changer-choix:hover { border-color: var(--vert); }
+.changer-choix--confirmer { border-color: var(--terra); background: #fff; }
+.changer-confirmer { margin-top: 6px; font: 700 14px var(--f-sous); color: var(--terra-fonce); }
+.changer-label { display: block; margin-top: 16px; font: 700 15px var(--f-sous); }
+.changer-champ { width: 100%; min-height: 48px; margin-top: 6px; padding: 10px 14px; font: 400 16px var(--f-corps); color: var(--encre);
+  background: #fff; border: 1.5px solid var(--trait); border-radius: 12px; }
+.changer-champ:focus { border-color: var(--vert); outline: none; box-shadow: 0 0 0 3px rgba(110, 142, 134, .25); }
+.changer-vide { font-size: 14px; color: var(--encre-douce); }
+.changer .lien-discret { padding: 10px 0 0; }
+.changer-ok { margin: 8px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(110, 142, 134, .14); font: 700 14px/1.4 var(--f-sous); color: var(--vert-fonce); }
+@media (max-width: 420px) { .changer-btn { margin-left: 0; } }
+
 .note-essai { font-size: 13px; color: var(--encre-douce); margin: 28px 0 0; }
 
 /* ---------- ÉCRAN 4 : Ma journée ---------- */

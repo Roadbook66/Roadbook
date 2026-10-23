@@ -972,6 +972,52 @@
   };
 
   // Pour les tests : vérifier que le réseau est bien relié
+  /* ---------- Changer une étape (Ma route) ---------- */
+  // Les étapes des régions autour d’un point, avec le détour qu’elles imposent entre la veille et le lendemain
+  RB.etapesPossibles = function (prec, suiv, ici, exclure) {
+    var l = [], vu = {};
+    (exclure || []).forEach(function (id) { vu[id] = 1; });
+    RB.circuits.forEach(function (c) {
+      c.stages.forEach(function (s) {
+        if (vu[s.id] || !s.rep || !s.rep.length || typeof s.lat !== "number") return;
+        var d = vol(ici, s);
+        if (d > 150) return;
+        var detour = vol(prec, s) + (suiv ? vol(s, suiv) - vol(prec, suiv) : 0);
+        vu[s.id] = 1;
+        l.push({ s: s, c: c, d: d, detour: detour });
+      });
+    });
+    l.sort(function (a, b) { return (a.detour + a.d * 0.5) - (b.detour + b.d * 0.5); });
+    return l;
+  };
+  // Une ville de son choix devient une étape
+  RB.etapeVille = function (v) {
+    var nom = v[0], slug = "ville-" + nom.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-");
+    var s = { id: slug, nom: nom, lat: v[2], lon: v[3], pause: 0,
+      rep: [["Le cœur de " + nom, "Une balade à pied pour découvrir " + nom + ".", "p"], ["Le marché ou l’office de tourisme", "Pour les bonnes adresses du coin.", "p"]],
+      route: ["p", 3, "", ""], aire: ["près de " + nom, "c", null, null, null], camp: ["près de " + nom, "c", null, null, null] };
+    return { s: s, c: { id: slug, dest: nom, pays: String(v[1]).toLowerCase(), paysCode: v[1] }, pays: v[1] };
+  };
+  // La journée qui va vers une étape (même forme que celles du générateur)
+  RB.jourVers = function (a, choix, type, depuis, depuisPt) {
+    var ctx = contexte(a), s = choix.s, c = choix.c, envies = enviesChoisies(a);
+    var km = depuisPt && type !== "pause" ? routeKm(depuisPt, s, 1.3) : 0;
+    var j = {
+      type: type, depuis: depuis, vers: s.nom, lieuId: s.id, lat: s.lat, lon: s.lon,
+      km: km, min: km ? minutes(km, ctx.vCircuit) : 0, ferryMin: 0, photo: "images/etapes/" + s.id + ".jpg",
+      route: type === "pause" ? null : routeEtape(s, ctx),
+      reperes: s.rep.map(function (r) { return { nom: r[0], texte: r[1], statut: r[2] === "r" ? "r" : "p", pourToi: pourToi(r, envies) }; }),
+      dormir: dormir(s, ctx, c.pays), region: c.dest,
+      pays: choix.pays || (RB.paysCircuit ? RB.paysCircuit(c) : "") || "", change: true
+    };
+    statutJour(j);
+    return j;
+  };
+  RB.trajetEstime = function (a, de, vers) {
+    var ctx = contexte(a), km = routeKm(de, vers, 1.3);
+    return { km: km, min: minutes(km, ctx.vCircuit) };
+  };
+
   RB._reseau = function () { if (!reseau) construireReseau(); return reseau; };
   RB._dijkstra = function (n, v) { if (!reseau) construireReseau(); return dijkstra(n, v || 85); };
 })();
