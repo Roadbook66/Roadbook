@@ -568,3 +568,5 @@ button { font: inherit; color: inherit; }
 .commu-accord { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; font-size: 14px; color: var(--encre-douce); }
 .commu-accord input { margin-top: 3px; width: 18px; height: 18px; flex: 0 0 auto; }
 .commu-merci { margin: 0; padding: 14px; border-radius: 12px; background: rgba(110, 142, 134, .12); font-weight: 600; color: var(--vert-fonce); }
+.accueil-infos { position: absolute; z-index: 1; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); text-align: center; color: #fff; opacity: .85;
+  font: 400 13px var(--f-corps); text-shadow: 0 1px 6px rgba(38, 51, 47, .6); }

@@ -1215,7 +1215,7 @@ lienSite(l) + "</p>" +
       '<p class="action-message commu-message" role="status" aria-live="polite"></p>' +
       '<div class="planning-actions"><button type="submit" class="btn btn--principal btn--petit">Envoyer</button>' +
       '<button type="button" class="lien-discret" data-fermer-avis>Annuler</button></div>' +
-      '<p class="commu-qui">Ton avis est publié après vérification, pour garder Roadbook fiable.</p></form>';
+      '<p class="commu-qui">Ton avis est publié après vérification, pour garder Roadbook fiable. En l’envoyant, tu acceptes les <a href="infos.html#conditions" target="_blank" rel="noopener">conditions</a> ; tes données : <a href="infos.html#confidentialite" target="_blank" rel="noopener">confidentialité</a>.</p></form>';
   }
   function gererCommunaute(e, j) {
     var t = e.target;
@@ -1476,7 +1476,7 @@ lienSite(l) + "</p>" +
           '<p class="texte">Juste ton prénom et ton e-mail, rien d’autre.</p>' +
           '<label class="champ"><span>Ton prénom</span><input type="text" id="acces-prenom" autocomplete="given-name"></label>' +
           '<label class="champ"><span>Ton e-mail</span><input type="email" id="acces-email" autocomplete="email" inputmode="email"></label>' +
-          '<p class="note-essai">Pour l’instant, pas de mot de passe : ton voyage est gardé dans ce navigateur, sur cet appareil.</p></div>') +
+          '<p class="note-essai">Pour l’instant, pas de mot de passe : ton voyage, ton prénom et ton e-mail restent dans ce navigateur, sur cet appareil, et ne sont envoyés à personne (<a href="infos.html#confidentialite">confidentialité</a>).</p></div>') +
       '<p class="action-message" id="message-garder" role="status" aria-live="polite"></p>' +
       '<button class="btn btn--principal" type="button" id="btn-sauver">Sauvegarder ce voyage</button>';
 

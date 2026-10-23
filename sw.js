@@ -4,18 +4,19 @@
    À chaque mise à jour de Roadbook, change VERSION : le téléphone reprend
    alors les nouveaux fichiers dès qu’il a du réseau.
    ========================================================================= */
-var VERSION = "roadbook-2026-10-21-9";
+var VERSION = "roadbook-2026-10-23-1";
 var APPLI = VERSION + "-appli";
 var VOYAGES = "roadbook-voyages";   // aires et photos des voyages préparés (gardé d’une version à l’autre)
 
 var FICHIERS = [
-  "./", "css/styles.css",
+  "./", "css/polices.css", "css/styles.css", "infos.html",
   "js/villes.js", "js/villes-plus.js", "js/data.js", "js/data-europe.js", "js/data-europe2.js", "js/data-terre.js",
   "js/regions-outils.js", "js/regions-ouest.js", "js/regions-centre.js", "js/regions-sud.js", "js/regions-nord.js",
   "js/regions-est.js", "js/regions-orient.js", "js/regions-plus.js", "js/regions-fin.js",
   "js/villes-ouest.js", "js/villes-centre.js", "js/villes-sud.js", "js/villes-nord.js", "js/villes-est.js",
   "js/villes-orient.js", "js/villes-geonames.js", "js/envies.js", "js/generator.js", "js/planning.js", "js/regles-route.js", "js/modifier.js", "js/aires.js",
   "js/photos.js", "js/mes-photos.js", "js/horsligne.js", "js/config.js", "js/vendor/supabase/supabase.js", "js/communaute.js", "js/vendor/leaflet/leaflet.js", "js/vendor/leaflet/leaflet.css", "js/fond-carte.js", "js/carte.js", "js/app.js",
+  "fonts/inter-latin-400-normal.woff2", "fonts/inter-latin-500-normal.woff2", "fonts/inter-latin-600-normal.woff2", "fonts/inter-latin-ext-400-normal.woff2", "fonts/inter-latin-ext-500-normal.woff2", "fonts/inter-latin-ext-600-normal.woff2", "fonts/lato-latin-400-normal.woff2", "fonts/lato-latin-700-normal.woff2", "fonts/lato-latin-ext-400-normal.woff2", "fonts/lato-latin-ext-700-normal.woff2", "fonts/lora-latin-500-italic.woff2", "fonts/lora-latin-500-normal.woff2", "fonts/lora-latin-600-normal.woff2", "fonts/lora-latin-ext-500-italic.woff2", "fonts/lora-latin-ext-500-normal.woff2", "fonts/lora-latin-ext-600-normal.woff2",
   "images/accueil.jpg", "images/icone-192.png", "images/icone-512.png", "manifest.webmanifest"
 ];
 
