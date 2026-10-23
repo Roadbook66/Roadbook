@@ -91,3 +91,35 @@ create policy "modérer les photos" on storage.objects for all to authenticated
 -- Chaque avis est signé d’un prénom ou d’un pseudo (2 caractères au moins)
 alter table public.contributions add constraint contributions_pseudo_obligatoire
   check (pseudo is not null and char_length(btrim(pseudo)) >= 2) not valid;
+
+-- =========================================================================
+-- Les vérifications de Roadbook : « j’y suis allée, c’est vérifié »
+-- Lisibles par tous, écrites seulement par les modératrices (mode administratrice)
+-- =========================================================================
+create table if not exists public.verifications (
+  cle text primary key check (char_length(cle) <= 200),     -- lieu:<lat,lon> · etape:<id> · repere:<id>:<nom>
+  type text not null check (type in ('lieu','etape','repere')),
+  nom text check (char_length(nom) <= 160),
+  lat double precision check (lat between -90 and 90),
+  lon double precision check (lon between -180 and 180),
+  pays text check (char_length(pays) <= 3),
+  visite_le date,
+  eau text check (eau in ('oui','non')),
+  vidange text check (vidange in ('oui','non')),
+  elec text check (elec in ('oui','non')),
+  douche text check (douche in ('oui','non')),
+  chiens text check (chiens in ('oui','non')),
+  payant text check (payant in ('gratuit','payant')),
+  prix text check (char_length(prix) <= 40),
+  note text check (char_length(note) <= 600),
+  maj_le timestamptz not null default now()
+);
+alter table public.verifications enable row level security;
+drop policy if exists "lire les vérifications" on public.verifications;
+create policy "lire les vérifications" on public.verifications for select to anon, authenticated using (true);
+drop policy if exists "vérifier : ajouter" on public.verifications;
+create policy "vérifier : ajouter" on public.verifications for insert to authenticated with check (public.est_moderateur());
+drop policy if exists "vérifier : changer" on public.verifications;
+create policy "vérifier : changer" on public.verifications for update to authenticated using (public.est_moderateur()) with check (public.est_moderateur());
+drop policy if exists "vérifier : retirer" on public.verifications;
+create policy "vérifier : retirer" on public.verifications for delete to authenticated using (public.est_moderateur());

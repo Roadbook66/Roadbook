@@ -56,6 +56,31 @@
   function statutLieu() {
     return '<span class="statut statut--p">' + ICONES.p + "<span>Proposé</span></span>";
   }
+  /* ---------- Vérifié par Roadbook (mode administratrice) ---------- */
+  function verifDe(cle) { return RB.verifs ? RB.verifs.de(cle) : null; }
+  function adminOn() { return !!(RB.verifs && RB.verifs.estAdmin()); }
+  function statutVerifie() { return '<span class="statut statut--r">' + ICONES.r + "<span>Vérifié</span></span>"; }
+  function ligneVerif(vf) {
+    return '<p class="verif-ligne">' + ICONES.r + "<span>Vérifié sur place par Roadbook" + (vf.visite_le ? ", " + esc(moisAnnee(vf.visite_le)) : "") + "</span></p>" +
+      (vf.note ? '<p class="verif-note">« ' + esc(vf.note) + " »</p>" : "");
+  }
+  function moisAnnee(d) { try { return new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }); } catch (e) { return ""; } }
+  // Les constatations de Roadbook remplacent les données d’OpenStreetMap
+  function avecVerif(l) {
+    var vf = RB.verifs && RB.communaute ? verifDe(RB.verifs.cleLieu(l)) : null;
+    if (!vf) return l;
+    var x = {}; Object.keys(l).forEach(function (k) { x[k] = l[k]; });
+    [["eau", "eau"], ["vidange", "vidange"], ["elec", "elec"], ["douche", "douche"], ["chien", "chiens"]].forEach(function (c) {
+      if (vf[c[1]] === "oui") x[c[0]] = 1; else if (vf[c[1]] === "non") x[c[0]] = 0;
+    });
+    if (vf.payant === "gratuit") x.payant = 0; else if (vf.payant === "payant") x.payant = 1;
+    x.verif = vf;
+    return x;
+  }
+  function barreAdmin() {
+    return adminOn() ? '<p class="admin-barre"><strong>Mode administratrice</strong><span>Tes vérifications sont visibles par tous les voyageurs.</span>' +
+      '<a href="moderation.html">Modération</a><button type="button" class="lien-discret" data-admin-sortir>Quitter</button></p>' : "";
+  }
 
   /* Paysage dessiné : remplace la photo tant qu’elle n’est pas fournie */
   var PAYSAGE =
@@ -777,14 +802,15 @@
           (j.ferryMin ? " · ferry " + duree(j.ferryMin) : "");
       var frontiere = j.pays && j.paysDepuis && j.pays !== j.paysDepuis && j.type !== "pause"
         ? '<span class="frontiere">Entrée en ' + esc(nomPays(j.pays)) + "</span>" : "";
-      var points = j.aConfirmer
+      var verifiee = j.lieuId && RB.verifs && j.type !== "retour" && verifDe(RB.verifs.cleEtape(j.lieuId));
+      var points = j.aConfirmer && !verifiee
         ? '<span class="jour-points">' + j.aConfirmer + (j.aConfirmer > 1 ? " points" : " point") + " à vérifier sur place</span>"
         : "";
       return '<li><a class="jour-ligne jour-ligne--' + j.statut + (j.type === "pause" || j.type === "mer" ? " jour-ligne--pause" : "") + '" href="#/jour/' + j.n + '">' +
         '<span class="jour-num"><span>J' + j.n + "</span>" + (j.date ? "<small>" + esc(j.date) + "</small>" : "") + "</span>" +
         '<span class="jour-corps"><strong>' + avecPays(j.vers, j.pays) + "</strong>" + frontiere + '<span class="jour-meta">' + meta + "</span>" +
         resumeLieux(j) +
-        '<span class="jour-statut">' + statut(j.statut) + points +
+        '<span class="jour-statut">' + statut(verifiee ? "r" : j.statut) + points +
           (j.carnet && j.carnet.fait ? '<span class="jour-fait">' + ICONES.r + "J’y suis allé</span>" : "") +
           (j.carnet && j.carnet.note ? '<span class="jour-note">· une note</span>' : "") +
           (j.ajoute ? '<span class="jour-note">· jour ajouté</span>' : "") + "</span></span>" +
@@ -839,6 +865,7 @@
     }
     $("#route-contenu").innerHTML =
       (phV ? '<figure class="route-photo"><div class="route-photo-cadre">' + photo(phV.f, phV.lieu, persoV ? phV : null, persoV) + "</div>" + (persoV ? "" : creditPhoto(phV)) + "</figure>" : "") +
+      barreAdmin() +
       '<p class="surtitre">Ta route est prête</p>' +
       '<h1 class="titre-page">' + esc(v.circuit.titre) + "</h1>" +
       '<p class="recap">' + recap(v) + "</p>" +
@@ -1073,7 +1100,11 @@
   };
   function nomLieu(l) { return l.nom || (TYPE_LIEU[l.type] + (l.ville ? " de " + l.ville : "")); }
   function cleLieu(l) { return l.lat + "," + l.lon; }
-  function carteLieu(l, ville, choix) {
+  var lieuxAffiches = {};
+  function carteLieu(l, ville, choix, pays) {
+    l = avecVerif(l);
+    var vf = l.verif, cleV = RB.verifs && RB.communaute ? RB.verifs.cleLieu(l) : "";
+    if (cleV) lieuxAffiches[cleV] = { l: l, pays: pays };
     var dormir = l.type === "A" || l.type === "C" || l.type === "P";
     var choisi = dormir && choix === cleLieu(l);
     var infos = [];
@@ -1083,17 +1114,20 @@
     var lien = "https://www.openstreetmap.org/?mlat=" + l.lat + "&mlon=" + l.lon + "#map=17/" + l.lat + "/" + l.lon;
     return '<div class="info info--lieu' + (choisi ? " info--choisi" : "") + '">' +
       '<p class="lieu-type">' + TYPE_LIEU[l.type] + (choisi ? ' <span class="lieu-choisi">· ton choix pour ce soir</span>' : "") + "</p>" +
-      '<div class="info-tete"><h3>' + esc(nomLieu(l)) + "</h3>" + statutLieu() + "</div>" +
+      '<div class="info-tete"><h3>' + esc(nomLieu(l)) + "</h3>" + (vf ? statutVerifie() : statutLieu()) + "</div>" +
+      (vf ? ligneVerif(vf) : "") +
       '<p class="lieu-infos">' + infos.join(" · ") + "</p>" +
       (l.source === "D" ? '<p class="lieu-infos">Infos complétées par l’office de tourisme (DATAtourisme)</p>' : "") +
       (l.horaires ? '<p class="lieu-infos">Horaires : ' + esc(l.horaires) + "</p>" : "") +
-      (dormir ? "<p>Stationnement de nuit à confirmer sur place (panneaux, accueil, mairie).</p>" : "") +
+      (dormir && !vf ? "<p>Stationnement de nuit à confirmer sur place (panneaux, accueil, mairie).</p>" : "") +
+      (vf && vf.prix ? '<p class="lieu-infos">Prix constaté : ' + esc(vf.prix) + "</p>" : "") +
       '<ul class="services">' + SERVICES_LIEU.filter(function (sv) { return dormir || sv.critique; }).map(function (sv) {
         var v = l[sv.cle];
-        var st = sv.critique ? "c" : "p";
+        var cv = sv.cle === "chien" ? "chiens" : sv.cle;
+        var st = vf && vf[cv] ? "v" : sv.critique ? "c" : "p";
         return '<li class="service service--' + (v === 1 || v === 3 ? "oui" : v === 0 ? "non" : "inconnu") + '">' +
           '<div class="service-ligne"><span class="service-icone">' + ICONE_SERVICE[sv.cle] + "</span>" +
-          '<span class="service-nom">' + sv.nom + '</span><span class="service-valeur">' + valeurLieu(sv.cle, v) + "</span>" + statut(st) + "</div>" +
+          '<span class="service-nom">' + sv.nom + '</span><span class="service-valeur">' + valeurLieu(sv.cle, v) + "</span>" + (st === "v" ? statutVerifie() : statut(st)) + "</div>" +
           (sv.critique && v !== 1 ? repli(sv.repli) : "") + "</li>";
       }).join("") + "</ul>" +
       (SERVICES_LIEU.some(function (sv) { return (dormir || sv.critique) && l[sv.cle] === 2; })
@@ -1104,6 +1138,9 @@
         (choisi ? "Choisir un autre lieu" : "Je dors ici ce soir") + "</button>" : "") +
       '<p class="lieu-liens"><a href="' + lien + '" target="_blank" rel="noopener">Voir le lieu</a>' +
 lienSite(l) + "</p>" +
+      (adminOn() && cleV ? '<button type="button" class="btn-admin" data-verif-lieu="' + esc(cleV) + '">' + ICONES.r +
+        (vf ? "Modifier ma vérification" : "J’y suis allée : vérifier ce lieu") + "</button>" +
+        '<div class="verif-form" data-verif-form="' + esc(cleV) + '" hidden></div>' : "") +
       "</div>";
   }
   // Seuls les sites qui correspondent au lieu sont gardés : celui de la mairie (M:) ou celui du camping ou de l’aire (L:)
@@ -1116,7 +1153,7 @@ lienSite(l) + "</p>" +
   // Une ligne courte pour l’écran « Ma route »
   function resumeLieux(j) {
     if (!j.lieux) return "";
-    var l = j.lieux.filter(function (x) { return x.type !== "V" && x.type !== "E"; });
+    var l = j.lieux.filter(function (x) { return x.type !== "V" && x.type !== "E"; }).map(avecVerif);
     if (j.choixNuit) l.sort(function (x, y) { return (cleLieu(y) === j.choixNuit) - (cleLieu(x) === j.choixNuit); });
     if (!l.length) return '<span class="jour-nuit">Nuit : aucune aire ni camping connu à moins de 35 km, à chercher sur place</span>';
     var p = l[0];
@@ -1124,7 +1161,7 @@ lienSite(l) + "</p>" +
       var v = p[cle], sym = v === 1 || v === 3 ? "✓" : v === 0 ? "✗" : "?";
       return '<span class="puce puce--' + (sym === "✓" ? "oui" : sym === "✗" ? "non" : "inconnu") + '">' + court + " " + sym + "</span>";
     };
-    return '<span class="jour-nuit">Nuit : ' + esc(nomLieu(p)) + (p.km >= 0.5 ? " (" + String(p.km).replace(".", ",") + "\u00a0km)" : "") +
+    return '<span class="jour-nuit">Nuit : ' + esc(nomLieu(p)) + (p.verif ? " · vérifié par Roadbook" : "") + (p.km >= 0.5 ? " (" + String(p.km).replace(".", ",") + "\u00a0km)" : "") +
       (l[1] ? " · ou " + esc(nomLieu(l[1])) : "") + "</span>" +
       '<span class="puces">' + puce("eau", "Eau") + puce("vidange", "Vidange") + puce("elec", "Élec.") + puce("douche", "Douches") + puce("chien", "Chiens") + "</span>";
   }
@@ -1136,17 +1173,21 @@ lienSite(l) + "</p>" +
   function afficherJour(n) {
     var v = voyage, j = v.jours[n - 1], total = v.jours.length;
     if (!j.pays) noterPays(v);
+    var cleEt = j.lieuId && RB.verifs ? RB.verifs.cleEtape(j.lieuId) : "", vfEt = cleEt ? verifDe(cleEt) : null;
     lieuxManquants(v, function () { if (location.hash === "#/jour/" + n) afficherJour(n); });
     var html = '<div class="jour-photo">' + photo(j.photo, j.vers, photoDe(j.photoLieu || j.lieuId, j.pays), persoDe(j)) +
       '<a class="jour-photo-retour" href="#/route" aria-label="Revenir à ma route">←</a></div>' +
       galerie(persoDe(j)) +
-      '<div class="colonne">' +
+      '<div class="colonne">' + barreAdmin() +
       '<p class="surtitre">Jour ' + j.n + " sur " + total + (j.date ? " · " + esc(j.date) : "") + "</p>" +
       '<h1 class="titre-page titre-page--jour">' + esc(j.vers) + "</h1>" +
       (nomPays(j.pays) && String(j.vers).indexOf(nomPays(j.pays)) < 0 ? '<p class="jour-pays">' + esc(nomPays(j.pays)) + "</p>" : "") +
-      '<div class="jour-statut-tete">' + statut(j.statut) +
-        (j.aConfirmer ? '<span class="jour-points">' + j.aConfirmer + (j.aConfirmer > 1 ? " points" : " point") + " à vérifier sur place</span>" : "") +
-      "</div>";
+      '<div class="jour-statut-tete">' + statut(vfEt ? "r" : j.statut) +
+        (j.aConfirmer && !vfEt ? '<span class="jour-points">' + j.aConfirmer + (j.aConfirmer > 1 ? " points" : " point") + " à vérifier sur place</span>" : "") +
+      "</div>" + (vfEt ? ligneVerif(vfEt) : "") +
+      (adminOn() && cleEt && j.type !== "retour" && j.type !== "mer"
+        ? '<button type="button" class="btn-admin" data-verif-etape="' + esc(cleEt) + '" data-nom="' + esc(j.vers) + '" data-lat="' + j.lat + '" data-lon="' + j.lon + '" data-pays="' + esc(j.pays || "") + '">' +
+          ICONES.r + (vfEt ? "Retirer « étape vérifiée »" : "J’ai fait cette étape : la marquer vérifiée") + "</button>" : "");
 
     if (j.type === "pause") {
       html += '<div class="bloc bloc--pause"><p>' + esc(j.texte) + "</p></div>";
@@ -1161,7 +1202,7 @@ lienSite(l) + "</p>" +
         (j.ferryMin ? "<div><b>" + duree(j.ferryMin) + "</b><span>de ferry</span></div>" : "") + "</div>" +
         '<div class="info-tete info-tete--fin"><p class="trajet">De ' + avecPays(j.depuis, j.paysDepuis) + " à " + avecPays(j.vers, j.pays) + ", estimation</p>" + statut("p") + "</div>" +
         '<div class="info">' +
-          '<div class="info-tete"><h3>La route</h3>' + statut(j.route.statut) + "</div>" +
+          '<div class="info-tete"><h3>La route</h3>' + statut(vfEt ? "r" : j.route.statut) + "</div>" +
           "<p>" + esc(j.route.texte) + "</p>" +
           (j.route.alerte ? '<p class="alerte">' + esc(j.route.alerte) + "</p>" : "") +
           repli(j.route.repli) +
@@ -1178,8 +1219,12 @@ lienSite(l) + "</p>" +
 
     html += '<section class="bloc"><h2 class="sous-titre">Si tu as envie…</h2><ul class="reperes">' +
       j.reperes.map(function (r) {
-        return '<li class="info"><div class="info-tete"><h3>' + esc(r.nom) + "</h3>" + statut(r.statut) + "</div><p>" + esc(r.texte) + "</p>" +
-          (r.pourToi && r.pourToi.length ? '<p class="pour-toi">Pour toi · ' + r.pourToi.map(esc).join(", ") + "</p>" : "") + "</li>";
+        var cleR = j.lieuId && RB.verifs ? RB.verifs.cleRepere(j.lieuId, r.nom) : "", vfR = cleR ? verifDe(cleR) : null;
+        return '<li class="info"><div class="info-tete"><h3>' + esc(r.nom) + "</h3>" + (vfR ? statutVerifie() : statut(r.statut)) + "</div><p>" + esc(r.texte) + "</p>" +
+          (r.pourToi && r.pourToi.length ? '<p class="pour-toi">Pour toi · ' + r.pourToi.map(esc).join(", ") + "</p>" : "") +
+          (vfR ? ligneVerif(vfR) : "") +
+          (adminOn() && cleR ? '<button type="button" class="btn-admin btn-admin--petit" data-verif-repere="' + esc(cleR) + '" data-nom="' + esc(r.nom) + '" data-lat="' + j.lat + '" data-lon="' + j.lon + '" data-pays="' + esc(j.pays || "") + '">' +
+            ICONES.r + (vfR ? "Retirer « vérifié »" : "J’y suis allée : vérifié") + "</button>" : "") + "</li>";
       }).join("") + "</ul></section>";
 
     if (typeof j.lat === "number" && j.type !== "mer")
@@ -1196,7 +1241,7 @@ lienSite(l) + "</p>" +
     if (j.dormir && lieux.length && j.dormir.statut !== "r") {
       // de vrais lieux à la place du texte générique
       html += '<section class="bloc"><h2 class="sous-titre">Où dormir</h2>' +
-        lieux.map(function (l) { return carteLieu(l, j.vers, j.choixNuit); }).join("") +
+        lieux.map(function (l) { return carteLieu(l, j.vers, j.choixNuit, j.pays); }).join("") +
         repli(lieux.length > 1 ? "Si le premier lieu est complet ou fermé, essaie le suivant ; sinon, demande à l’office de tourisme une aire ou un camping ouvert."
           : "Si ce lieu est complet ou fermé, demande à l’office de tourisme une aire ou un camping ouvert. Ne t’installe jamais là où un panneau l’interdit.") +
         '<p class="credit credit--gauche">Aires et campings : © les contributeurs d’<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> ; en France, compléments des offices de tourisme via <a href="https://www.datatourisme.fr" target="_blank" rel="noopener">DATAtourisme</a> (Licence Ouverte). Informations non vérifiées sur place.</p>' +
@@ -1216,7 +1261,7 @@ lienSite(l) + "</p>" +
               repli(s.repli) + "</li>";
           }).join("") + "</ul>" +
         "</div>" +
-        (lieux.length ? '<h3 class="sous-titre sous-titre--petit">D’autres lieux tout près</h3>' + lieux.map(function (l) { return carteLieu(l, j.vers, j.choixNuit); }).join("") +
+        (lieux.length ? '<h3 class="sous-titre sous-titre--petit">D’autres lieux tout près</h3>' + lieux.map(function (l) { return carteLieu(l, j.vers, j.choixNuit, j.pays); }).join("") +
           '<p class="credit credit--gauche">Aires et campings : © les contributeurs d’<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>.</p>' : "") +
         "</section>";
     } else {
@@ -1682,6 +1727,80 @@ lienSite(l) + "</p>" +
     if (b) location.hash = b.dataset.aller;
   });
   window.addEventListener("hashchange", router);
+
+  /* ---------- Mode administratrice : les actions ---------- */
+  function redessiner() { var y = window.scrollY; router(); window.scrollTo(0, y); }
+  function aujourdhui() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function formVerif(cle) {
+    var x = lieuxAffiches[cle]; if (!x) return "";
+    var l = x.l, vf = l.verif || {};
+    function choixService(nom, cle2, v) {
+      var cur = vf[cle2] || (v === 1 || v === 3 ? "oui" : v === 0 ? "non" : "");
+      return '<label class="verif-champ"><span>' + nom + '</span><select data-champ="' + cle2 + '">' +
+        [["", "Pas vu"], ["oui", "Oui"], ["non", "Non"]].map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>";
+    }
+    var pay = vf.payant || (l.payant === 0 ? "gratuit" : l.payant === 1 ? "payant" : "");
+    return '<p class="verif-titre">Ce que tu as vu sur place</p>' +
+      '<label class="verif-champ"><span>Date de ta visite</span><input type="date" data-champ="visite_le" value="' + esc(vf.visite_le || aujourdhui()) + '"></label>' +
+      '<div class="verif-grille">' + choixService("Eau propre", "eau", l.eau) + choixService("Vidange", "vidange", l.vidange) +
+        choixService("Électricité", "elec", l.elec) + choixService("Douches", "douche", l.douche) + choixService("Chiens acceptés", "chiens", l.chien) +
+        '<label class="verif-champ"><span>Prix</span><select data-champ="payant">' +
+          [["", "Pas vu"], ["gratuit", "Gratuit"], ["payant", "Payant"]].map(function (o) { return '<option value="' + o[0] + '"' + (pay === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") +
+        "</select></label></div>" +
+      '<label class="verif-champ"><span>Tarif (facultatif)</span><input type="text" maxlength="40" data-champ="prix" placeholder="ex. 12 € la nuit" value="' + esc(vf.prix || "") + '"></label>' +
+      '<label class="verif-champ"><span>Ton mot pour les voyageurs (facultatif)</span><textarea maxlength="600" rows="3" data-champ="note" placeholder="Calme, ombragé, arriver avant 18 h…">' + esc(vf.note || "") + "</textarea></label>" +
+      '<div class="verif-actions"><button type="button" class="btn btn--principal btn--petit" data-verif-ok="' + esc(cle) + '">Enregistrer : lieu vérifié</button>' +
+      (l.verif ? '<button type="button" class="lien-discret" data-verif-retirer="' + esc(cle) + '">Retirer la vérification</button>' : "") +
+      '<button type="button" class="lien-discret" data-verif-fermer="' + esc(cle) + '">Annuler</button></div>' +
+      '<p class="verif-msg" role="status"></p>';
+  }
+  document.addEventListener("click", function (e) {
+    if (!RB.verifs) return;
+    var b = e.target.closest("[data-admin-sortir]");
+    if (b) { RB.verifs.sortir().then(redessiner); return; }
+    b = e.target.closest("[data-verif-lieu]");
+    if (b && adminOn()) {
+      var f = document.querySelector('[data-verif-form="' + CSS.escape(b.dataset.verifLieu) + '"]');
+      if (f) { f.innerHTML = formVerif(b.dataset.verifLieu); f.hidden = false; b.hidden = true; }
+      return;
+    }
+    b = e.target.closest("[data-verif-fermer]");
+    if (b) {
+      var f2 = b.closest(".verif-form"); f2.hidden = true; f2.innerHTML = "";
+      var bt = document.querySelector('[data-verif-lieu="' + CSS.escape(b.dataset.verifFermer) + '"]'); if (bt) bt.hidden = false;
+      return;
+    }
+    b = e.target.closest("[data-verif-ok]");
+    if (b && adminOn()) {
+      var cle = b.dataset.verifOk, x = lieuxAffiches[cle], form = b.closest(".verif-form"), ligne = { cle: cle, type: "lieu" };
+      if (!x) return;
+      ligne.nom = nomLieu(x.l).slice(0, 160); ligne.lat = x.l.lat; ligne.lon = x.l.lon; ligne.pays = x.pays || null;
+      form.querySelectorAll("[data-champ]").forEach(function (c) { var val = c.value.trim(); ligne[c.dataset.champ] = val || null; });
+      b.disabled = true;
+      RB.verifs.enregistrer(ligne).then(redessiner).catch(function (er) {
+        b.disabled = false; form.querySelector(".verif-msg").textContent = "Pas enregistré : " + (navigator.onLine ? "réessaie, ou reconnecte-toi sur la page Modération." : "il faut du réseau.");
+      });
+      return;
+    }
+    b = e.target.closest("[data-verif-retirer], [data-verif-etape], [data-verif-repere]");
+    if (!b || !adminOn()) return;
+    var cleX = b.dataset.verifRetirer || b.dataset.verifEtape || b.dataset.verifRepere;
+    var existe = !!verifDe(cleX);
+    if (existe && !b.classList.contains("btn--confirmer")) {
+      b.classList.add("btn--confirmer"); b.dataset.texte = b.innerHTML; b.textContent = "Appuie encore pour retirer"; return;
+    }
+    b.disabled = true;
+    var p = existe ? RB.verifs.retirer(cleX) : RB.verifs.enregistrer({
+      cle: cleX, type: b.dataset.verifEtape ? "etape" : "repere", nom: String(b.dataset.nom || "").slice(0, 160),
+      lat: +b.dataset.lat || null, lon: +b.dataset.lon || null, pays: b.dataset.pays || null, visite_le: aujourdhui()
+    });
+    p.then(redessiner).catch(function () { b.disabled = false; b.textContent = navigator.onLine ? "Pas enregistré, réessaie" : "Il faut du réseau"; });
+  });
+  if (RB.verifs) {
+    RB.verifs.admin().then(function (a) { if (a) redessiner(); });
+    RB.verifs.charger(false, function (change) { if (change) redessiner(); });
+    window.addEventListener("hashchange", function () { RB.verifs.charger(false, function (change) { if (change) redessiner(); }); });
+  }
 
   construireQuestionnaire();
   router();

@@ -129,4 +129,71 @@
     });
     return { avis: liste.length, notes: n, moyenne: n ? somme / n : 0, services: services, existe: existe };
   };
+
+  /* ---------- Les vérifications de Roadbook (mode administratrice) ----------
+     Tout le monde les lit ; seule une modératrice connectée (page moderation.html,
+     même navigateur) peut en ajouter. Gardées dans le téléphone pour rouler sans réseau. */
+  var CLE_VERIFS = "roadbook.verifs", verifs = lire(CLE_VERIFS, { le: 0, l: {} }), admin = null, clientAdmin = null;
+  function pretAdmin() {
+    if (clientAdmin) return clientAdmin;
+    var c = RB.config || {};
+    if (!c.supabaseUrl || !c.supabaseCle || !window.supabase) return null;
+    // Même session que la page de modération (même stockage du navigateur)
+    try { clientAdmin = window.supabase.createClient(c.supabaseUrl, c.supabaseCle); } catch (e) { clientAdmin = null; }
+    return clientAdmin;
+  }
+  RB.verifs = {};
+  RB.verifs.cleLieu = function (l) { return "lieu:" + RB.communaute.cle(l); };
+  RB.verifs.cleEtape = function (id) { return "etape:" + id; };
+  RB.verifs.cleRepere = function (id, nom) {
+    return ("repere:" + id + ":" + String(nom || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-")).slice(0, 200);
+  };
+  RB.verifs.de = function (cle) { return verifs.l[cle] || null; };
+  RB.verifs.toutes = function () { return verifs.l; };
+  // Recharge depuis le serveur (au plus toutes les 5 minutes, sauf si force) ; fin(change)
+  RB.verifs.charger = function (force, fin) {
+    var c = pret();
+    if (!c || !navigator.onLine || (!force && Date.now() - verifs.le < 300000)) { if (fin) fin(false); return; }
+    c.from("verifications").select("*").limit(5000).then(function (r) {
+      if (r.error) throw r.error;
+      var l = {};
+      (r.data || []).forEach(function (x) { l[x.cle] = x; });
+      var change = JSON.stringify(l) !== JSON.stringify(verifs.l);
+      verifs = { le: Date.now(), l: l };
+      ecrire(CLE_VERIFS, verifs);
+      if (fin) fin(change);
+    }).catch(function () { if (fin) fin(false); });
+  };
+  // Suis-je connectée comme modératrice ? (réponse gardée pour la visite)
+  RB.verifs.admin = function () {
+    if (admin !== null) return Promise.resolve(admin);
+    var c = pretAdmin();
+    if (!c) return Promise.resolve(admin = false);
+    return c.auth.getSession().then(function (r) {
+      if (!r.data || !r.data.session) return (admin = false);
+      return c.rpc("est_moderateur").then(function (x) { return (admin = !x.error && x.data === true); });
+    }).catch(function () { return (admin = false); });
+  };
+  RB.verifs.estAdmin = function () { return admin === true; };
+  RB.verifs.enregistrer = function (ligne) {
+    var c = pretAdmin();
+    if (!c || !admin) return Promise.reject(new Error("pas connectée"));
+    ligne.maj_le = new Date().toISOString();
+    return c.from("verifications").upsert(ligne).then(function (r) {
+      if (r.error) throw r.error;
+      verifs.l[ligne.cle] = ligne; ecrire(CLE_VERIFS, verifs);
+    });
+  };
+  RB.verifs.retirer = function (cle) {
+    var c = pretAdmin();
+    if (!c || !admin) return Promise.reject(new Error("pas connectée"));
+    return c.from("verifications").delete().eq("cle", cle).then(function (r) {
+      if (r.error) throw r.error;
+      delete verifs.l[cle]; ecrire(CLE_VERIFS, verifs);
+    });
+  };
+  RB.verifs.sortir = function () {
+    var c = pretAdmin(); admin = false;
+    return c ? c.auth.signOut().catch(function () {}) : Promise.resolve();
+  };
 })();

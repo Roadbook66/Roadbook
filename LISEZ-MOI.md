@@ -199,3 +199,15 @@ Un autre navigateur ou un autre appareil ne voit pas ces voyages.
   (connexion avec le compte créé dans Supabase, adresse listée dans la table « moderateurs »).
   Publier déplace les photos du stockage privé vers le public. Les voyageurs peuvent signaler un avis publié.
 - Bibliothèque supabase-js 2.45.4 dans `js/vendor/supabase/` (licence MIT).
+
+## Mode administratrice : « Vérifié par Roadbook »
+
+- Se connecter sur `moderation.html`, puis ouvrir Roadbook dans le **même navigateur** : la session est partagée
+  (`RB.verifs.admin()` vérifie `est_moderateur()`). Une barre « Mode administratrice » apparaît.
+- Sur chaque journée : « J’ai fait cette étape » (l’étape passe en « Roulée »), « J’y suis allée : vérifié »
+  sur chaque idée de visite, et sur chaque aire, camping ou parking un formulaire (date, eau, vidange,
+  électricité, douches, chiens, prix, un mot). Les constatations remplacent les données d’OpenStreetMap.
+- Table Supabase `verifications` (clé `lieu:<lat,lon>`, `etape:<id>`, `repere:<id>:<nom>`) : lisible par tous,
+  écrite seulement par les modératrices (RLS). Gardée dans le téléphone (`roadbook.verifs`) pour rouler sans réseau.
+- Onglet « Mes vérifications » dans `moderation.html` pour tout revoir ou retirer.
+

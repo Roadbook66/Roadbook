@@ -30,10 +30,11 @@
 
   function afficher() {
     boite.innerHTML = '<div class="mod-onglets">' +
-      [["attente", "En attente"], ["signalements", "Signalements"], ["publie", "Publiés"]].map(function (o) {
+      [["attente", "En attente"], ["signalements", "Signalements"], ["publie", "Publiés"], ["verifs", "Mes vérifications"]].map(function (o) {
         return '<button type="button" class="choix choix--petit" data-onglet="' + o[0] + '" aria-pressed="' + (o[0] === onglet) + '"><span class="choix-l">' + o[1] + "</span></button>";
       }).join("") + '<button type="button" class="lien-discret" id="mod-sortir">Me déconnecter</button></div><div id="mod-liste"><p class="mod-vide">Chargement…</p></div>';
     if (onglet === "signalements") return signalements();
+    if (onglet === "verifs") return mesVerifs();
     var q = sb.from("contributions").select("*").eq("statut", onglet === "attente" ? "en_attente" : "publie")
       .order("cree_le", { ascending: onglet === "attente" }).limit(50);
     q.then(function (r) {
@@ -49,6 +50,25 @@
     });
   }
   function liste(h) { $("#mod-liste").innerHTML = h; }
+  // Ce que j’ai vérifié sur place (ajouté depuis l’appli, en mode administratrice)
+  var GENRE = { lieu: "Aire, camping ou parking", etape: "Étape", repere: "Idée de visite" };
+  function mesVerifs() {
+    var intro = '<div class="mod-carte mod-carte--info"><p><strong>Pour vérifier un lieu :</strong> reste connectée ici, puis ouvre ' +
+      '<a href="./">Roadbook</a> dans ce même navigateur. Sur chaque journée, des boutons « J’y suis allée » apparaissent, visibles par toi seule.</p></div>';
+    sb.from("verifications").select("*").order("maj_le", { ascending: false }).limit(500).then(function (r) {
+      if (r.error) return liste(intro + '<p class="mod-vide">Impossible de charger tes vérifications.</p>');
+      if (!r.data.length) return liste(intro + '<p class="mod-vide">Aucune vérification pour l’instant.</p>');
+      liste(intro + r.data.map(function (x) {
+        var champs = [["eau", "Eau"], ["vidange", "Vidange"], ["elec", "Électricité"], ["douche", "Douches"], ["chiens", "Chiens"], ["payant", "Prix"], ["prix", "Tarif"]]
+          .filter(function (k) { return x[k[0]]; }).map(function (k) { return "<span><strong>" + k[1] + " :</strong> " + esc(x[k[0]]) + "</span>"; }).join("");
+        return '<div class="mod-carte" data-cle="' + esc(x.cle) + '"><h3>' + esc(x.nom || x.cle) + "</h3>" +
+          '<p class="mod-meta">' + GENRE[x.type] + (x.pays ? " · " + esc(x.pays) : "") + (x.visite_le ? " · visité le " + new Date(x.visite_le + "T12:00:00").toLocaleDateString("fr-FR") : "") +
+          (x.lat != null ? ' · <a href="https://www.openstreetmap.org/?mlat=' + x.lat + "&mlon=" + x.lon + '#map=16/' + x.lat + "/" + x.lon + '" target="_blank" rel="noopener">voir sur la carte</a>' : "") + "</p>" +
+          (champs ? '<div class="mod-champs">' + champs + "</div>" : "") + (x.note ? "<p>" + esc(x.note) + "</p>" : "") +
+          '<div class="mod-actions"><button type="button" class="btn btn--secondaire btn--petit" data-verif-retirer>Retirer cette vérification</button></div><p data-msg></p></div>';
+      }).join(""));
+    });
+  }
   function carte(a, urls) {
     var champs = [["existe", "Existe"], ["note", "Note"], ["eau", "Eau"], ["vidange", "Vidange"], ["elec", "Électricité"], ["douche", "Douches"], ["chiens", "Chiens"], ["payant", "Prix"], ["prix", "Combien"]]
       .filter(function (k) { return a[k[0]] != null && a[k[0]] !== ""; })
@@ -109,6 +129,15 @@
     var o = e.target.closest("[data-onglet]");
     if (o) { onglet = o.dataset.onglet; afficher(); return; }
     if (e.target.closest("#mod-sortir")) { sb.auth.signOut().then(function () { connexion(); }); return; }
+    var rv = e.target.closest("[data-verif-retirer]");
+    if (rv) {
+      var cv = rv.closest(".mod-carte");
+      if (!rv.classList.contains("btn--confirmer")) { rv.classList.add("btn--confirmer"); rv.textContent = "Appuie encore pour retirer"; return; }
+      sb.from("verifications").delete().eq("cle", cv.dataset.cle).then(function (r) {
+        if (r.error) cv.querySelector("[data-msg]").textContent = "Ça n’a pas marché : " + r.error.message; else cv.remove();
+      });
+      return;
+    }
     var b = e.target.closest("[data-action]");
     if (!b) return;
     var cte = b.closest(".mod-carte"), id = cte.dataset.id, msg = cte.querySelector("[data-msg]"), act = b.dataset.action;
