@@ -52,7 +52,9 @@
     carte.attributionControl.setPrefix(false);
     carte.attributionControl.addAttribution("Fond : Natural Earth");
     // Toujours là, même sans réseau : les côtes et les frontières incluses dans l’application
-    var terre = { color: "#C7BCA9", weight: 1, fillColor: "#F7F3EA", fillOpacity: 1, interactive: false };
+    // Le fond simple va SOUS la carte détaillée (sinon il la cache)
+    carte.createPane("fond").style.zIndex = 150;
+    var terre = { color: "#C7BCA9", weight: 1, fillColor: "#F7F3EA", fillOpacity: 1, interactive: false, pane: "fond", renderer: L.canvas({ pane: "fond" }) };
     (RB.fondCarte || []).forEach(function (poly) { L.polygon(poly, terre).addTo(carte); });
     // Avec du réseau : la carte détaillée d’OpenStreetMap (routes, villages, forêts) par-dessus
     if (/^https?:$/.test(location.protocol) && navigator.onLine !== false) {
