@@ -147,6 +147,11 @@ Un autre navigateur ou un autre appareil ne voit pas ces voyages.
   version en ligne. Les noms des villes viennent de la liste des villes de Roadbook.
 - Pour le détail des rues, chaque lieu a un lien « Voir sur la carte » vers OpenStreetMap.
 
+- Avec du réseau (site en ligne), la carte détaillée d’OpenStreetMap (tile.openstreetmap.org) s’affiche
+  par-dessus le fond Natural Earth, qui reste en secours sans réseau. Bouton « Plein écran » sur chaque carte.
+  Sur Ma route, toucher un numéro ouvre la fiche de l’étape : photo (si elle montre ce lieu), dates, km,
+  nuits sur place, une idée de visite et « Voir la journée ».
+
 ## Les règles de la route
 
 - `js/regles-route.js` : zones à faibles émissions, péages urbains, péages et vitesses au-delà de 3,5 t,

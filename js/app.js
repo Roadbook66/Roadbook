@@ -846,7 +846,7 @@
       (v.avertissement ? '<div class="avertissement"><p>' + esc(v.avertissement) + "</p></div>" : "") +
       '<div class="carte-cadre carte-cadre--route"><div class="trace" id="trace-route">' + trace(v) + "</div>" +
         '<div class="carte" id="carte-route" aria-label="Carte du voyage"></div></div>' +
-      '<p class="carte-note">Le tracé relie tes étapes à vol d’oiseau. Touche un point pour voir sa journée.</p>' +
+      '<p class="carte-note">Le tracé relie tes étapes à vol d’oiseau. Touche un numéro pour voir l’étape, ou ouvre la carte en plein écran.</p>' +
       '<p class="budget">Budget indicatif sur place : <strong>' + nombre(v.budget[0]) + " à " + nombre(v.budget[1]) +
         " €</strong> pour deux (nuits, carburant, courses).</p>" +
       '<div class="horsligne" id="horsligne" role="status" aria-live="polite"></div>' +
@@ -879,8 +879,29 @@
     if (changerOuvrir) { var no = changerOuvrir; changerOuvrir = null; ouvrirChanger(v, no, true); }
     if (changerFait) montrerChange(changerFait);
     setTimeout(function () {
-      if (RB.carte && location.hash === "#/route") RB.carte.route($("#carte-route"), v, $("#trace-route"));
+      if (RB.carte && location.hash === "#/route") RB.carte.route($("#carte-route"), v, $("#trace-route"), function (e) { return ficheCarte(v, e); });
     }, 60);
+  }
+
+  // La fiche d’une étape quand on la touche sur la carte
+  function ficheCarte(v, e) {
+    var j = v.jours[e.debut - 1], fin = v.jours[e.fin - 1] || j;
+    if (!j) return "<strong>" + esc(e.nom) + "</strong>";
+    // La photo seulement si elle montre bien ce lieu (pas celle de la région)
+    var pp = persoDe(j), ph = pp ? { f: pp.f } : photoDe(j.photoLieu || j.lieuId, j.pays);
+    if (!pp && ph && (!ph.lieu || normaliser(j.vers).indexOf(normaliser(ph.lieu).split(" ")[0]) < 0)) ph = null;
+    var quand = e.debut === e.fin ? "Jour " + e.debut + (j.date ? " · " + esc(j.date) : "")
+      : "Jours " + e.debut + " à " + e.fin + (j.date && fin.date ? " · du " + esc(j.date) + " au " + esc(fin.date) : "");
+    var nuits = e.fin - e.debut + 1;
+    var rep = (j.reperes || []).filter(function (r) { return !/^En chemin/.test(r.nom) && r.nom !== "Avant de repartir"; })[0];
+    return '<div class="carte-fiche">' +
+      (ph ? '<img class="carte-fiche-photo" src="' + esc(ph.f) + '" alt="">' : "") +
+      '<p class="carte-fiche-quand">' + quand + "</p>" +
+      '<p class="carte-fiche-nom">' + avecPays(j.vers, j.pays) + "</p>" +
+      '<p class="carte-fiche-info">' + (j.km ? nombre(j.km) + "\u00a0km · " + duree(j.min) + " depuis " + esc(j.depuis) : "Pas de route ce jour-là") +
+        (nuits > 1 ? "<br>" + nuits + " nuits sur place" : "") + "</p>" +
+      (rep ? '<p class="carte-fiche-rep">À voir : ' + esc(rep.nom) + "</p>" : "") +
+      '<a class="carte-fiche-lien" href="#/jour/' + e.debut + '">Voir la journée ›</a></div>';
   }
 
   /* ---------- Changer une étape qui ne plaît pas ---------- */

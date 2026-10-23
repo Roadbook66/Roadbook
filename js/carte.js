@@ -2,6 +2,7 @@
    Roadbook — les cartes (Leaflet)
    Le fond de carte est inclus dans l’application (js/fond-carte.js : côtes et
    frontières, Natural Earth, domaine public) : il marche partout, même sans réseau.
+   Avec du réseau, la carte détaillée d’OpenStreetMap s’affiche par-dessus.
    · Ma route : le tracé du voyage, nuit après nuit (à vol d’oiseau entre les étapes).
    · Ma journée : d’où l’on vient, la ville du soir, et les aires et campings autour.
    ========================================================================= */
@@ -21,6 +22,7 @@
     var calque = L.layerGroup().addTo(carte);
     function maj() {
       calque.clearLayers();
+      if (carte._tuilesOk) return; // la carte détaillée a déjà ses noms
       var z = carte.getZoom(), b = carte.getBounds().pad(-0.04), n = 0, max = z >= 10 ? 40 : 26;
       var deja = [];
       (RB.villes || []).forEach(function (v) {
@@ -45,16 +47,66 @@
     cartes.forEach(function (c) { try { c.remove(); } catch (e) {} });
     cartes = [];
     if (typeof L === "undefined" || !boite) return null;
-    var carte = L.map(boite, { zoomControl: true, scrollWheelZoom: false, attributionControl: true, preferCanvas: true, minZoom: 3, maxZoom: 15 });
+    fermerPlein();
+    var carte = L.map(boite, { zoomControl: true, scrollWheelZoom: false, attributionControl: true, preferCanvas: true, minZoom: 3, maxZoom: 17 });
     carte.attributionControl.setPrefix(false);
     carte.attributionControl.addAttribution("Fond : Natural Earth");
+    // Toujours là, même sans réseau : les côtes et les frontières incluses dans l’application
     var terre = { color: "#C7BCA9", weight: 1, fillColor: "#F7F3EA", fillOpacity: 1, interactive: false };
     (RB.fondCarte || []).forEach(function (poly) { L.polygon(poly, terre).addTo(carte); });
+    // Avec du réseau : la carte détaillée d’OpenStreetMap (routes, villages, forêts) par-dessus
+    if (/^https?:$/.test(location.protocol) && navigator.onLine !== false) {
+      var tuiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19, className: "carte-tuiles",
+        attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+      }).addTo(carte);
+      tuiles.once("tileload", function () { carte._tuilesOk = true; carte.fire("moveend"); });
+    }
+    boutonPlein(carte, boite);
     boite.classList.add("carte--prete");
     if (secours) secours.hidden = true;
     cartes.push(carte);
     return carte;
   }
+
+  // Plein écran : la carte prend tout l’écran du téléphone, puis revient à sa place
+  var plein = null;
+  function fermerPlein() {
+    if (!plein) return;
+    var p = plein; plein = null;
+    p.cadre.classList.remove("carte-cadre--plein");
+    if (p.place && document.body.contains(p.place)) p.place.parentNode.replaceChild(p.cadre, p.place);
+    else if (p.cadre.parentNode) p.cadre.parentNode.removeChild(p.cadre); // la page a été redessinée entre-temps
+    document.body.classList.remove("carte-ouverte");
+    p.bouton.innerHTML = "⤢ Plein écran"; p.bouton.setAttribute("aria-label", "Voir la carte en plein écran");
+    try { p.carte.scrollWheelZoom.disable(); p.carte.invalidateSize(); } catch (e) {}
+  }
+  function boutonPlein(carte, boite) {
+    var cadre = boite.closest(".carte-cadre") || boite.parentNode;
+    var Ctrl = L.Control.extend({ options: { position: "topright" }, onAdd: function () {
+      var b = L.DomUtil.create("button", "carte-plein-btn");
+      b.type = "button"; b.innerHTML = "⤢ Plein écran"; b.setAttribute("aria-label", "Voir la carte en plein écran");
+      L.DomEvent.disableClickPropagation(b);
+      L.DomEvent.on(b, "click", function () {
+        if (plein) { fermerPlein(); return; }
+        // La carte passe directement sous <body> (un écran animé gênerait le plein écran), une place garde sa position
+        var place = document.createElement("div");
+        place.className = "carte-place"; place.style.height = cadre.offsetHeight + "px";
+        cadre.parentNode.replaceChild(place, cadre);
+        document.body.appendChild(cadre);
+        plein = { cadre: cadre, carte: carte, bouton: b, place: place };
+        cadre.classList.add("carte-cadre--plein");
+        document.body.classList.add("carte-ouverte");
+        b.innerHTML = "✕ Fermer la carte"; b.setAttribute("aria-label", "Fermer le plein écran");
+        carte.scrollWheelZoom.enable();
+        setTimeout(function () { carte.invalidateSize(); }, 50);
+      });
+      return b;
+    } });
+    new Ctrl().addTo(carte);
+  }
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") fermerPlein(); });
+  window.addEventListener("hashchange", fermerPlein);
 
   RB.carte = {};
 
@@ -70,7 +122,7 @@
     return l;
   }
 
-  RB.carte.route = function (boite, v, secours) {
+  RB.carte.route = function (boite, v, secours, fiche) {
     var carte = creer(boite, secours);
     if (!carte) return;
     var et = etapes(v), maison = [v.maison.lat, v.maison.lon];
@@ -83,8 +135,9 @@
       if (e.retour) return;
       n++;
       var jours = e.debut === e.fin ? "Jour " + e.debut : "Jours " + e.debut + " à " + e.fin;
-      L.marker([e.lat, e.lon], { icon: point("", n), title: e.nom })
-        .bindPopup("<strong>" + esc(e.nom) + "</strong><br>" + jours + '<br><a href="#/jour/' + e.debut + '">Voir la journée</a>').addTo(carte);
+      var html = fiche ? fiche(e) : "<strong>" + esc(e.nom) + "</strong><br>" + jours + '<br><a href="#/jour/' + e.debut + '">Voir la journée</a>';
+      L.marker([e.lat, e.lon], { icon: point("", n), title: e.nom, riseOnHover: true })
+        .bindPopup(html, { minWidth: 220, maxWidth: 250, className: fiche ? "carte-fiche-popup" : "", autoPanPaddingTopLeft: [12, 56], autoPanPaddingBottomRight: [12, 24] }).addTo(carte);
     });
     carte.fitBounds(L.latLngBounds(trace), { padding: [24, 24], maxZoom: 11 });
     nomsDesVilles(carte, trace);

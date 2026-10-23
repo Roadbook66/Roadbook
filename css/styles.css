@@ -515,6 +515,22 @@ button { font: inherit; color: inherit; }
 .carte .leaflet-popup-content { font: 400 14px/1.45 var(--f-corps); color: var(--encre); margin: 12px 14px; }
 .carte .leaflet-popup-content a { color: var(--terra-fonce); font-weight: 600; }
 .carte .leaflet-control-attribution { font-size: 10.5px; }
+.carte .carte-tuiles { filter: saturate(.8) sepia(.08); }
+.carte-plein-btn { padding: 8px 12px; border: 0; border-radius: 999px; cursor: pointer; background: var(--papier); color: var(--encre);
+  font: 700 13px var(--f-sous); box-shadow: 0 2px 10px -2px rgba(38, 51, 47, .35); }
+.carte-plein-btn:hover { background: #fff; }
+.carte-cadre--plein { position: fixed; inset: 0; z-index: 3000; height: auto; border-radius: 0; border: 0; }
+.carte-cadre--plein .leaflet-top { top: env(safe-area-inset-top, 0); }
+body.carte-ouverte { overflow: hidden; }
+.carte-fiche-popup .leaflet-popup-content { margin: 0; width: 240px !important; }
+.carte-fiche-popup .leaflet-popup-content-wrapper { padding: 0; overflow: hidden; border-radius: 14px; }
+.carte-fiche { padding: 0 0 12px; }
+.carte-fiche-photo { display: block; width: 100%; height: 120px; object-fit: cover; }
+.carte-fiche p { margin: 0; padding: 0 14px; }
+.carte-fiche-quand { padding-top: 10px !important; font: 700 12px var(--f-sous); text-transform: uppercase; letter-spacing: .08em; color: var(--terra-fonce); }
+.carte-fiche-nom { font: 600 17px/1.3 var(--f-titre); margin-top: 2px !important; }
+.carte-fiche-info, .carte-fiche-rep { font-size: 13.5px; color: var(--encre-douce); margin-top: 4px !important; }
+.carte-fiche-lien { display: inline-block; margin: 8px 14px 0; }
 .carte-nom-soir { position: absolute; left: 18px; top: 0; transform: translateY(-50%); white-space: nowrap; padding: 4px 9px; border-radius: 999px;
   background: #fff; color: var(--terra-fonce); font: 700 13px/1.2 var(--f-sous); box-shadow: 0 1px 4px rgba(38, 51, 47, .25); pointer-events: none; }
 
@@ -595,3 +611,5 @@ button { font: inherit; color: inherit; }
 .commu-merci { margin: 0; padding: 14px; border-radius: 12px; background: rgba(110, 142, 134, .12); font-weight: 600; color: var(--vert-fonce); }
 .accueil-infos { position: absolute; z-index: 1; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); text-align: center; color: #fff; opacity: .85;
   font: 400 13px var(--f-corps); text-shadow: 0 1px 6px rgba(38, 51, 47, .6); }
+.carte-fiche-popup a.leaflet-popup-close-button { top: 6px; right: 6px; width: 26px; height: 26px; font: 400 20px/26px var(--f-corps); text-align: center;
+  border-radius: 50%; background: rgba(251, 249, 244, .92); color: var(--encre); }
