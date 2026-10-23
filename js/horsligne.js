@@ -22,7 +22,18 @@
   if ("serviceWorker" in navigator && window.isSecureContext && location.protocol !== "file:") {
     window.addEventListener("load", function () {
       try {
-        navigator.serviceWorker.register("sw.js").catch(function () {});
+        var avait = !!navigator.serviceWorker.controller, recharge = false;
+        navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function (reg) {
+          // Sur le téléphone, l’appli reste ouverte longtemps : on regarde s’il y a du nouveau à chaque retour
+          document.addEventListener("visibilitychange", function () { if (!document.hidden) reg.update().catch(function () {}); });
+        }).catch(function () {});
+        // Une nouvelle version vient d’arriver : on recharge une fois pour l’afficher
+        navigator.serviceWorker.addEventListener("controllerchange", function () {
+          if (!avait || recharge) return;
+          var actif = document.activeElement;
+          if (actif && /INPUT|TEXTAREA/.test(actif.tagName)) return; // pas au milieu d’une saisie
+          recharge = true; location.reload();
+        });
       } catch (e) {}
     });
   }

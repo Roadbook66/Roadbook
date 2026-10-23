@@ -4,7 +4,7 @@
    À chaque mise à jour de Roadbook, change VERSION : le téléphone reprend
    alors les nouveaux fichiers dès qu’il a du réseau.
    ========================================================================= */
-var VERSION = "roadbook-2026-10-23-4";
+var VERSION = "roadbook-2026-10-23-5";
 var APPLI = VERSION + "-appli";
 var VOYAGES = "roadbook-voyages";   // aires et photos des voyages préparés (gardé d’une version à l’autre)
 
@@ -81,12 +81,18 @@ self.addEventListener("fetch", function (e) {
     return;
   }
 
-  // Le reste de l’application : la version gardée tout de suite, mise à jour en arrière-plan
-  e.respondWith(dansLesCaches(req).then(function (r) {
-    var reseau = fetch(req).then(function (rep) {
+  // Le reste de l’application : la dernière version si le réseau répond vite, sinon celle gardée
+  e.respondWith(new Promise(function (ok) {
+    var fini = false;
+    function rendre(r) { if (!fini && r) { fini = true; ok(r); } }
+    var minuteur = setTimeout(function () { dansLesCaches(req).then(rendre); }, 3500);
+    fetch(req, { cache: "no-cache" }).then(function (rep) {
+      clearTimeout(minuteur);
       if (rep.ok) { var copie = rep.clone(); caches.open(APPLI).then(function (c) { c.put(req, copie); }); }
-      return rep;
-    }).catch(function () { return r; });
-    return r || reseau;
+      rendre(rep);
+    }).catch(function () {
+      clearTimeout(minuteur);
+      dansLesCaches(req).then(function (r) { rendre(r || Response.error()); });
+    });
   }));
 });
